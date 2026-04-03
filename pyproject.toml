@@ -6,8 +6,20 @@ authors = ["kausthub-kannan <kausthubkannan961@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.12,<3.14"
+fastapi = "^0.135.3"
+uvicorn = "^0.43.0"
+autogen = "^0.11.4"
+litelm = "^0.4.0"
+agentops = "^0.4.21"
+langchain = "^1.2.15"
+langgraph = "^1.1.5"
+sqlalchemy = "^2.0.49"
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.15.9"
+black = "^26.3.1"
 
 [build-system]
 requires = ["poetry-core"]
