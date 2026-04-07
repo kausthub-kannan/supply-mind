@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-mydb}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-mydb}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  db-init:
+    image: python:3.12-slim
+    container_name: db_init
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-mydb}
+    volumes:
+      - ./scripts/init_db.py:/app/init_db.py:ro
+      - ./scripts/data:/app/data:ro
+    working_dir: /app
+    command: >
+      sh -c "pip install psycopg2-binary --quiet && python init_db.py"
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm_proxy
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./configs/litellm.yaml:/app/config.yaml:ro
+    environment:
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+    command: [ "--config", "/app/config.yaml", "--port", "4000", "--detailed_debug" ]
+
+volumes:
+  postgres_data:

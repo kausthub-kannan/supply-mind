@@ -1,0 +1,16 @@
+model_list:
+  - model_name: mistral-large
+    litellm_params:
+      model: mistral/mistral-large-latest
+
+  - model_name: mistral-small
+    litellm_params:
+      model: mistral/mistral-small-latest
+
+general_settings:
+  master_key: "sk-1234"
+
+litellm_settings:
+  drop_params: true
+  set_verbose: true
+  success_callback: ["langfuse"]
