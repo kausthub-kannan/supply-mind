@@ -1,25 +1,3 @@
-"""
-db_init.py
-Creates the SupplyMind PostgreSQL schema, builds all tables with constraints,
-and bulk-loads data from the CSV files produced by data_generator.py.
-
-Dependencies:
-    pip install psycopg2-binary
-
-Usage:
-    python data_generator.py          # generate CSVs first
-    python db_init.py                 # create schema and load data
-
-Connection is configured via environment variables (recommended) or by
-editing the DB_CONFIG dict below directly.
-
-    export PG_HOST=localhost
-    export PG_PORT=5432
-    export PG_DB=supplymind
-    export PG_USER=postgres
-    export PG_PASSWORD=yourpassword
-"""
-
 import csv
 import json
 import os
@@ -42,7 +20,7 @@ DATA_DIR = "data"
 CSV_FILES = {
     "suppliers":      f"{DATA_DIR}/suppliers.csv",
     "inventory":      f"{DATA_DIR}/inventory.csv",
-    "consumption_log":f"{DATA_DIR}/consumption_log.csv",
+    "history_logs":f"{DATA_DIR}/history_logs.csv",
     "supplier_orders":f"{DATA_DIR}/supplier_orders.csv",
     "returns":        f"{DATA_DIR}/returns.csv",
 }
@@ -80,24 +58,28 @@ DDL_STATEMENTS = [
     )
     """,
     """
-    CREATE TABLE IF NOT EXISTS consumption_log (
+    CREATE TABLE IF NOT EXISTS history_logs (
         log_id            SERIAL          PRIMARY KEY,
         sku_id            INTEGER         NOT NULL REFERENCES inventory (sku_id),
-        quantity_consumed INTEGER         NOT NULL CHECK (quantity_consumed > 0),
+        units_sold        INTEGER         NOT NULL CHECK (units_sold >= 0),
         date              DATE            NOT NULL,
-        location          TEXT            NOT NULL
+        location          TEXT            NOT NULL,
+        opening_stock     INTEGER         NOT NULL,
+        closing_stock     INTEGER         NOT NULL,
+        units_received    INTEGER         NOT NULL,
+        units_returned    INTEGER         NOT NULL
     )
     """,
     """
     CREATE TABLE IF NOT EXISTS supplier_orders (
         order_id          SERIAL          PRIMARY KEY,
         email_thread_id   TEXT            NOT NULL,
+        email_thread_summary TEXT         NOT NULL,
         sku_id            INTEGER         NOT NULL REFERENCES inventory (sku_id),
         supplier_id       INTEGER         NOT NULL REFERENCES suppliers (supplier_id),
         quantity_ordered  INTEGER         NOT NULL CHECK (quantity_ordered > 0),
         order_value       NUMERIC(12,2)   NOT NULL CHECK (order_value >= 0),
-        status            TEXT            NOT NULL
-                              CHECK (status IN ('pending','confirmed','shipped','delivered','cancelled')),
+        status            TEXT            NOT NULL CHECK (status IN ('pending','confirmed','shipped','delivered','cancelled')),
         created_at        TIMESTAMPTZ     NOT NULL,
         expected_delivery TIMESTAMPTZ     NOT NULL,
         agent_trace       JSONB
@@ -107,6 +89,7 @@ DDL_STATEMENTS = [
     CREATE TABLE IF NOT EXISTS returns (
         return_id         SERIAL          PRIMARY KEY,
         email_thread_id   TEXT            NOT NULL,
+        email_thread_summary TEXT         NOT NULL,
         customer_email    TEXT            NOT NULL,
         order_id          INTEGER         NOT NULL REFERENCES supplier_orders (order_id),
         reason            TEXT            NOT NULL,
@@ -119,8 +102,8 @@ DDL_STATEMENTS = [
     """,
     # B-tree indexes
     "CREATE INDEX IF NOT EXISTS idx_inventory_supplier   ON inventory       (supplier_id)",
-    "CREATE INDEX IF NOT EXISTS idx_consumption_sku      ON consumption_log (sku_id)",
-    "CREATE INDEX IF NOT EXISTS idx_consumption_date     ON consumption_log (date)",
+    "CREATE INDEX IF NOT EXISTS idx_consumption_sku      ON history_logs (sku_id)",
+    "CREATE INDEX IF NOT EXISTS idx_consumption_date     ON history_logs (date)",
     "CREATE INDEX IF NOT EXISTS idx_orders_sku           ON supplier_orders (sku_id)",
     "CREATE INDEX IF NOT EXISTS idx_orders_supplier      ON supplier_orders (supplier_id)",
     "CREATE INDEX IF NOT EXISTS idx_orders_status        ON supplier_orders (status)",
@@ -214,7 +197,7 @@ def main():
     load_order = [
         ("suppliers",       CSV_FILES["suppliers"]),
         ("inventory",       CSV_FILES["inventory"]),
-        ("consumption_log", CSV_FILES["consumption_log"]),
+        ("history_logs", CSV_FILES["history_logs"]),
         ("supplier_orders", CSV_FILES["supplier_orders"]),
         ("returns",         CSV_FILES["returns"]),
     ]
@@ -243,7 +226,7 @@ def main():
     seq_map = {
         "suppliers":       "supplier_id",
         "inventory":       "sku_id",
-        "consumption_log": "log_id",
+        "history_logs": "log_id",
         "supplier_orders": "order_id",
         "returns":         "return_id",
     }

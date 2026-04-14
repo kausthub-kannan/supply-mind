@@ -31,7 +31,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
       POSTGRES_DB: ${POSTGRES_DB:-mydb}
     volumes:
-      - ./scripts/init_db.py:/app/init_db.py:ro
+      - ./scripts/dml.py:/app/dml.py:ro
       - ./scripts/data:/app/data:ro
     working_dir: /app
     command: >
