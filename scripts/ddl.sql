@@ -39,9 +39,7 @@ CREATE TABLE IF NOT EXISTS history_logs (
     specs_level       TEXT            NOT NULL CHECK (status IN (
                                               'medium',
                                               'high',
-                                              'level',
-                                              'delivered',
-                                              'cancelled'
+                                              'level'
                                           )),
 );
 

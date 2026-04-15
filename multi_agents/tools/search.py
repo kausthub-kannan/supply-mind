@@ -6,6 +6,7 @@ from langchain.tools import tool
 
 from schemas.search import SearchInput
 
+
 @tool(
     "web_search",
     args_schema=SearchInput,
@@ -32,10 +33,10 @@ def web_search(
 
         results = [
             {
-                "title":   r.get("title", ""),
-                "url":     r.get("url", ""),
-                "content": r.get("content", ""),   # snippet / summary
-                "score":   round(r.get("score", 0.0), 4),
+                "title": r.get("title", ""),
+                "url": r.get("url", ""),
+                "content": r.get("content", ""),  # snippet / summary
+                "score": round(r.get("score", 0.0), 4),
             }
             for r in response.get("results", [])
         ]

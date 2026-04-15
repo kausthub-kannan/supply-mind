@@ -8,21 +8,21 @@ import psycopg2.extras
 
 # ── Connection config ─────────────────────────────────────────────────────────
 DB_CONFIG = {
-    "host":     os.getenv("POSTGRES_HOST",     "localhost"),
-    "port":     int(os.getenv("POSTGRES_PORT", "5432")),
-    "dbname":   os.getenv("POSTGRES_DB",       "supplymind"),
-    "user":     os.getenv("POSTGRES_USER",     "postgres"),
+    "host": os.getenv("POSTGRES_HOST", "localhost"),
+    "port": int(os.getenv("POSTGRES_PORT", "5432")),
+    "dbname": os.getenv("POSTGRES_DB", "supplymind"),
+    "user": os.getenv("POSTGRES_USER", "postgres"),
     "password": os.getenv("POSTGRES_PASSWORD", ""),
 }
 
 DATA_DIR = "data"
 
 CSV_FILES = {
-    "suppliers":      f"{DATA_DIR}/suppliers.csv",
-    "inventory":      f"{DATA_DIR}/inventory.csv",
-    "history_logs":f"{DATA_DIR}/history_logs.csv",
-    "supplier_orders":f"{DATA_DIR}/supplier_orders.csv",
-    "returns":        f"{DATA_DIR}/returns.csv",
+    "suppliers": f"{DATA_DIR}/suppliers.csv",
+    "inventory": f"{DATA_DIR}/inventory.csv",
+    "history_logs": f"{DATA_DIR}/history_logs.csv",
+    "supplier_orders": f"{DATA_DIR}/supplier_orders.csv",
+    "returns": f"{DATA_DIR}/returns.csv",
 }
 
 # ── DDL ───────────────────────────────────────────────────────────────────────
@@ -114,15 +114,21 @@ DDL_STATEMENTS = [
 ]
 
 # ── Column type hints (drives CSV → Python coercion) ──────────────────────────
-INT_COLS  = {
-    "supplier_id", "lead_time_days",
-    "sku_id", "current_quantity", "reorder_threshold",
-    "log_id", "quantity_consumed",
-    "order_id", "quantity_ordered",
+INT_COLS = {
+    "supplier_id",
+    "lead_time_days",
+    "sku_id",
+    "current_quantity",
+    "reorder_threshold",
+    "log_id",
+    "quantity_consumed",
+    "order_id",
+    "quantity_ordered",
     "return_id",
 }
 FLOAT_COLS = {"reliability_score", "unit_cost", "order_value"}
-JSON_COLS  = {"agent_trace", "agent_decision"}   # stored as JSONB
+JSON_COLS = {"agent_trace", "agent_decision"}  # stored as JSONB
+
 
 def _coerce(value: str, col_name: str):
     if value == "":
@@ -138,17 +144,17 @@ def _coerce(value: str, col_name: str):
 
 # ── Loader ────────────────────────────────────────────────────────────────────
 
+
 def load_csv(cur, table: str, filepath: str) -> int:
     """Read *filepath* and bulk-insert into *table*. Returns inserted row count."""
     if not os.path.exists(filepath):
         raise FileNotFoundError(
-            f"CSV not found: {filepath}\n"
-            "Run  python data_generator.py  first."
+            f"CSV not found: {filepath}\n" "Run  python data_generator.py  first."
         )
 
     with open(filepath, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        rows   = list(reader)
+        rows = list(reader)
 
     if not rows:
         print(f"  [!] {filepath} is empty — skipping {table}")
@@ -159,8 +165,7 @@ def load_csv(cur, table: str, filepath: str) -> int:
 
     # execute_values is significantly faster than executemany for bulk loads
     sql = (
-        f"INSERT INTO {table} ({', '.join(cols)}) VALUES %s "
-        f"ON CONFLICT DO NOTHING"
+        f"INSERT INTO {table} ({', '.join(cols)}) VALUES %s " f"ON CONFLICT DO NOTHING"
     )
     psycopg2.extras.execute_values(cur, sql, data, page_size=500)
     return len(data)
@@ -168,9 +173,12 @@ def load_csv(cur, table: str, filepath: str) -> int:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 def main():
-    print(f"Connecting to PostgreSQL at {DB_CONFIG['host']}:{DB_CONFIG['port']} "
-          f"→ database '{DB_CONFIG['dbname']}' …")
+    print(
+        f"Connecting to PostgreSQL at {DB_CONFIG['host']}:{DB_CONFIG['port']} "
+        f"→ database '{DB_CONFIG['dbname']}' …"
+    )
     try:
         conn = psycopg2.connect(**DB_CONFIG)
     except psycopg2.OperationalError as e:
@@ -190,16 +198,17 @@ def main():
     except psycopg2.Error as e:
         conn.rollback()
         print(f"\n[ERROR] Schema creation failed:\n  {e}", file=sys.stderr)
-        cur.close(); conn.close()
+        cur.close()
+        conn.close()
         sys.exit(1)
 
     # ── Data load (FK-safe order) ─────────────────────────────────────────────
     load_order = [
-        ("suppliers",       CSV_FILES["suppliers"]),
-        ("inventory",       CSV_FILES["inventory"]),
+        ("suppliers", CSV_FILES["suppliers"]),
+        ("inventory", CSV_FILES["inventory"]),
         ("history_logs", CSV_FILES["history_logs"]),
         ("supplier_orders", CSV_FILES["supplier_orders"]),
-        ("returns",         CSV_FILES["returns"]),
+        ("returns", CSV_FILES["returns"]),
     ]
 
     print("\n── Loading CSV data ─────────────────────────────────")
@@ -213,22 +222,24 @@ def main():
         except FileNotFoundError as e:
             conn.rollback()
             print(f"\n[ERROR] {e}", file=sys.stderr)
-            cur.close(); conn.close()
+            cur.close()
+            conn.close()
             sys.exit(1)
         except (psycopg2.Error, json.JSONDecodeError) as e:
             conn.rollback()
             print(f"\n[ERROR] Failed loading {table}:\n  {e}", file=sys.stderr)
-            cur.close(); conn.close()
+            cur.close()
+            conn.close()
             sys.exit(1)
 
     # ── Sync sequences so future INSERTs don't collide with seeded IDs ────────
     print("\n── Syncing sequences ────────────────────────────────")
     seq_map = {
-        "suppliers":       "supplier_id",
-        "inventory":       "sku_id",
+        "suppliers": "supplier_id",
+        "inventory": "sku_id",
         "history_logs": "log_id",
         "supplier_orders": "order_id",
-        "returns":         "return_id",
+        "returns": "return_id",
     }
     for tbl, pk in seq_map.items():
         cur.execute(

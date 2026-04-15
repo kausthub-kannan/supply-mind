@@ -1,6 +1,7 @@
 from typing import Literal
 from pydantic import BaseModel, Field
 
+
 class SearchInput(BaseModel):
     query: str = Field(
         description="Concise search query to find up-to-date information",

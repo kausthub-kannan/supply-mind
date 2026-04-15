@@ -15,15 +15,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    "host":     os.getenv(""),
-    "port":     os.getenv(""),
-    "dbname":   os.getenv(""),
-    "user":     os.getenv(""),
+    "host": os.getenv(""),
+    "port": os.getenv(""),
+    "dbname": os.getenv(""),
+    "user": os.getenv(""),
     "password": os.getenv(""),
 }
 
 MAX_ROWS = 500
 ALLOWED_TABLES: set[str] = set()
+
 
 @contextmanager
 def get_connection(autocommit: bool = False):
@@ -58,9 +59,10 @@ def _format_rows(rows: list[dict]) -> str:
     if not rows:
         return "No rows returned."
     header = " | ".join(rows[0].keys())
-    sep    = "-" * len(header)
-    lines  = [header, sep] + [" | ".join(str(v) for v in r.values()) for r in rows]
+    sep = "-" * len(header)
+    lines = [header, sep] + [" | ".join(str(v) for v in r.values()) for r in rows]
     return "\n".join(lines)
+
 
 # ── Tools ─────────────────────────────────────────────────────────────────────
 @tool(args_schema=SelectInput)
@@ -78,12 +80,14 @@ def sql_select(
             _validate_columns(columns)
 
         actual_limit = min(limit, MAX_ROWS)
-        col_clause   = ", ".join(columns)  # safe: validated above
+        col_clause = ", ".join(columns)  # safe: validated above
 
         # Build query with psycopg2.sql for identifier safety
         query = sql.SQL("SELECT {cols} FROM {tbl}").format(
-            cols=sql.SQL(col_clause) if columns == ["*"] else sql.SQL(", ").join(
-                map(sql.Identifier, columns)
+            cols=(
+                sql.SQL(col_clause)
+                if columns == ["*"]
+                else sql.SQL(", ").join(map(sql.Identifier, columns))
             ),
             tbl=sql.Identifier(table),
         )
@@ -144,7 +148,7 @@ def sql_insert(
         if any(list(r.keys()) != columns for r in rows):
             return "All rows must have identical column sets."
 
-        col_ids  = sql.SQL(", ").join(map(sql.Identifier, columns))
+        col_ids = sql.SQL(", ").join(map(sql.Identifier, columns))
         placeholders = sql.SQL(", ").join(sql.Placeholder() * len(columns))
 
         query = sql.SQL("INSERT INTO {tbl} ({cols}) VALUES ({vals})").format(
@@ -170,9 +174,8 @@ def sql_insert(
                     for row_vals in values:
                         cur.execute(query, row_vals)
                         returned.extend(dict(r) for r in cur.fetchall())
-                    return (
-                        f"Inserted {len(rows)} row(s).\nReturned:\n"
-                        + _format_rows(returned)
+                    return f"Inserted {len(rows)} row(s).\nReturned:\n" + _format_rows(
+                        returned
                     )
                 else:
                     psycopg2.extras.execute_batch(cur, query, values, page_size=100)
@@ -245,9 +248,8 @@ def sql_update(
 
                 if returning:
                     returned = [dict(r) for r in cur.fetchall()]
-                    return (
-                        f"Updated {affected} row(s).\nReturned:\n"
-                        + _format_rows(returned)
+                    return f"Updated {affected} row(s).\nReturned:\n" + _format_rows(
+                        returned
                     )
                 return f"Successfully updated {affected} row(s) in '{table}'."
 
