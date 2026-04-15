@@ -5,6 +5,7 @@ from typing import List
 from langchain_core.tools import tool
 from schemas.anomaly import AnomalySchema
 
+
 @tool(args_schema=AnomalySchema)
 def anomaly_detection(sku_ids: List[str], lookback_days: int = 30) -> str:
     output = []
@@ -22,7 +23,7 @@ def detect_anomalies(sku_id: str, lookback_days: int = 30) -> dict:
             "Supply Anomalies",
             "Return Rates",
             "Price-Demand",
-            "Stock Balance"
+            "Stock Balance",
         ]
 
         # Randomly generate 1 to 4 anomalies for realism
@@ -35,13 +36,17 @@ def detect_anomalies(sku_id: str, lookback_days: int = 30) -> dict:
             event_date = start_date + timedelta(days=event_day)
             a_type = random.choice(anomaly_types)
 
-            anomalies_list.append({
-                "date": event_date.strftime("%Y-%m-%d"),
-                "anomaly_type": a_type,
-                "severity": random.choice(["Low", "Medium", "High", "Critical"]),
-                "requires_human_review": random.choice([True, True, False]),  # Weighted toward True
-                "description": f"Statistical deviation detected matching a '{a_type}' profile."
-            })
+            anomalies_list.append(
+                {
+                    "date": event_date.strftime("%Y-%m-%d"),
+                    "anomaly_type": a_type,
+                    "severity": random.choice(["Low", "Medium", "High", "Critical"]),
+                    "requires_human_review": random.choice(
+                        [True, True, False]
+                    ),  # Weighted toward True
+                    "description": f"Statistical deviation detected matching a '{a_type}' profile.",
+                }
+            )
 
         # Sort the anomalies chronologically
         anomalies_list.sort(key=lambda x: x["date"])
@@ -50,7 +55,7 @@ def detect_anomalies(sku_id: str, lookback_days: int = 30) -> dict:
             "sku_id": sku_id,
             "lookback_window": lookback_days,
             "total_anomalies_found": num_anomalies,
-            "anomalies": anomalies_list
+            "anomalies": anomalies_list,
         }
 
         return output_dict

@@ -11,9 +11,11 @@ from multi_agents.tools.reports.graph import (
     create_step_chart,
     create_dual_axis_chart,
 )
+from multi_agents.tools.forecast import forecast_orders
+from multi_agents.tools.anomaly import anomaly_detection
 
-forecast_agent_toolkit = [sql_select]
-anomaly_agent_toolkit = [sql_select]
+forecast_agent_toolkit = [sql_select, forecast_orders]
+anomaly_agent_toolkit = [sql_select, anomaly_detection]
 report_generation_toolkit = [
     upload_file,
     create_donut_plot,

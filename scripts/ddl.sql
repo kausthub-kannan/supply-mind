@@ -3,12 +3,12 @@ CREATE TABLE IF NOT EXISTS suppliers (
     supplier_name     TEXT            NOT NULL,
     lead_time_days    INTEGER         NOT NULL CHECK (lead_time_days > 0),
     contact_email     TEXT            NOT NULL,
-    reliability_score NUMERIC(4,2)    NOT NULL CHECK (reliability_score BETWEEN 0 AND 1),
+    reliability_score NUMERIC(4,2)    NOT NULL CHECK (reliability_score BETWEEN 0 AND 1)
 );
 
 CREATE TABLE IF NOT EXISTS inventory (
     inventory_id      SERIAL          PRIMARY KEY,
-    sku_id            TEXT            NOT NULL,
+    sku_id            TEXT            NOT NULL UNIQUE,
     sku_name          TEXT            NOT NULL,
     current_quantity  INTEGER         NOT NULL DEFAULT 0,
     reorder_threshold INTEGER         NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS inventory (
 CREATE TABLE IF NOT EXISTS supplier_sku_map (
     map_id            SERIAL          PRIMARY KEY,
     sku_id            TEXT            NOT NULL,
-    supplier_id       TEXT            NOT NULL,
+    supplier_id       TEXT            NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS history_logs (
@@ -33,14 +33,14 @@ CREATE TABLE IF NOT EXISTS history_logs (
     units_returned    INTEGER         NOT NULL,
     region            TEXT            NOT NULL,
     season            TEXT            NOT NULL,
-    price             DOUBLE          NOT NULL,
+    price             DOUBLE PRECISION NOT NULL,
     supplier_id       TEXT            NOT NULL,
     category          TEXT            NOT NULL,
-    specs_level       TEXT            NOT NULL CHECK (status IN (
+    specs_level       TEXT            NOT NULL CHECK (specs_level IN (
+                                              'low',
                                               'medium',
-                                              'high',
-                                              'level'
-                                          )),
+                                              'high'
+                                          ))
 );
 
 CREATE TABLE IF NOT EXISTS customer_orders (
@@ -53,14 +53,15 @@ CREATE TABLE IF NOT EXISTS customer_orders (
                                               'delivered',
                                               'cancelled'
                                           )),
-    created_at            TIMESTAMP     NOT NULL,
-    expected_delivery     TIMESTAMP     NOT NULL,
+    created_at            TIMESTAMP       NOT NULL,
+    expected_delivery     TIMESTAMP       NOT NULL
+    -- ✅ removed trailing comma
 );
 
 CREATE TABLE IF NOT EXISTS supplier_orders (
-    order_id              TEXT          PRIMARY KEY,
-    sku_id                TEXT         NOT NULL REFERENCES inventory (sku_id),
-    supplier_id           TEXT         NOT NULL REFERENCES suppliers (supplier_id),
+    order_id              TEXT            PRIMARY KEY,
+    sku_id                TEXT            NOT NULL REFERENCES inventory (sku_id),
+    supplier_id           TEXT            NOT NULL REFERENCES suppliers (supplier_id),
     quantity_ordered      INTEGER         NOT NULL CHECK (quantity_ordered > 0),
     order_value           NUMERIC(12,2)   NOT NULL CHECK (order_value >= 0),
     status                TEXT            NOT NULL CHECK (status IN (
@@ -72,8 +73,8 @@ CREATE TABLE IF NOT EXISTS supplier_orders (
                                           )),
     email_thread_id       TEXT            NOT NULL,
     email_thread_summary  TEXT            NOT NULL,
-    created_at            TIMESTAMP     NOT NULL,
-    expected_delivery     TIMESTAMP     NOT NULL,
+    created_at            TIMESTAMP       NOT NULL,
+    expected_delivery     TIMESTAMP       NOT NULL,
     agent_trace           JSONB
 );
 
@@ -92,7 +93,7 @@ CREATE TABLE IF NOT EXISTS returns (
     email_thread_id       TEXT            NOT NULL,
     email_thread_summary  TEXT            NOT NULL,
     agent_decision        JSONB,
-    created_at            TIMESTAMP     NOT NULL,
+    created_at            TIMESTAMP       NOT NULL,
     resolved_at           TIMESTAMP
 );
 
@@ -107,15 +108,18 @@ CREATE TABLE IF NOT EXISTS workflows (
                                             'failed',
                                             'in-review'
                                         ))
-)
-
+);
 
 -- =============================================================================
 -- INDEXES
 -- =============================================================================
 
 -- inventory
-CREATE INDEX IF NOT EXISTS idx_inventory_supplier    ON inventory        (supplier_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_sku         ON inventory        (sku_id);  -- ✅ supplier_id → sku_id
+
+-- supplier_sku_map
+CREATE INDEX IF NOT EXISTS idx_map_sku               ON supplier_sku_map (sku_id);
+CREATE INDEX IF NOT EXISTS idx_map_supplier          ON supplier_sku_map (supplier_id);
 
 -- history_logs
 CREATE INDEX IF NOT EXISTS idx_history_sku           ON history_logs     (sku_id);

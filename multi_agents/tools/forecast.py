@@ -5,9 +5,14 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from typing import List
 
+
 class ForecastSchema(BaseModel):
-    sku_ids: str = Field(description="The unique SKU identifier to generate the forecast for.")
-    days: int = Field(default=30, description="Number of days to forecast into the future.")
+    sku_ids: str = Field(
+        description="The unique SKU identifier to generate the forecast for."
+    )
+    days: int = Field(
+        default=30, description="Number of days to forecast into the future."
+    )
 
 
 @tool(args_schema=ForecastSchema)
@@ -34,17 +39,19 @@ def generate_forecast(sku_id: str, days: int = 30) -> dict:
             current_date = start_date + timedelta(days=i)
             forecast_val = baseline + random.randint(-15, 20)
 
-            forecast_list.append({
-                "date": current_date.strftime("%Y-%m-%d"),
-                "forecasted_demand": max(0, forecast_val),
-                "lower_bound": max(0, forecast_val - int(forecast_val * 0.15)),
-                "upper_bound": forecast_val + int(forecast_val * 0.20)
-            })
+            forecast_list.append(
+                {
+                    "date": current_date.strftime("%Y-%m-%d"),
+                    "forecasted_demand": max(0, forecast_val),
+                    "lower_bound": max(0, forecast_val - int(forecast_val * 0.15)),
+                    "upper_bound": forecast_val + int(forecast_val * 0.20),
+                }
+            )
 
         output_dict = {
             "sku_id": sku_id,
             "forecast_horizon_days": days,
-            "data": forecast_list
+            "data": forecast_list,
         }
 
         return output_dict
