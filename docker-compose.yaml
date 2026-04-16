@@ -29,7 +29,7 @@ services:
     environment:
       MISTRAL_API_KEY: ${MISTRAL_API_KEY}
       LITELLM_PORT: ${LITELLM_PORT}
-    command: ["--config", "/app/config.yaml", "--port", "${LITELLM_PORT}", "--detailed_debug"]
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--detailed_debug"]
 
 volumes:
   postgres_data:
