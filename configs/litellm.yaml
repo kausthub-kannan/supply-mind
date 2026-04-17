@@ -3,6 +3,10 @@ model_list:
     litellm_params:
       model: mistral/mistral-large-latest
 
+  - model_name: mistral-medium
+    litellm_params:
+      model: mistral/mistral-medium-latest
+
 general_settings:
   master_key: "sk-1234"
 

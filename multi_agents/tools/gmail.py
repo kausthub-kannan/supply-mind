@@ -9,7 +9,7 @@ from email.mime.multipart import MIMEMultipart
 from email.header import decode_header
 
 from langchain.tools import tool
-from schemas.gmail import SendEmailInput, ReadEmailInput
+from multi_agents.tools.schemas.gmail import SendEmailInput, ReadEmailInput
 
 GMAIL_EMAIL = os.getenv("GMAIL_EMAIL")
 GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
@@ -26,6 +26,15 @@ def send_email(
     reply_to_message_id: Optional[str] = None,
     references: Optional[str] = None,
 ) -> str:
+    """
+
+    :param recipient:
+    :param subject:
+    :param content:
+    :param reply_to_message_id:
+    :param references:
+    :return:
+    """
     if not GMAIL_EMAIL or not GMAIL_PASSWORD:
         return "Error: GMAIL_EMAIL and GMAIL_PASSWORD env vars not set."
 

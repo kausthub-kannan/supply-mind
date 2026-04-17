@@ -3,11 +3,17 @@ import random
 from datetime import datetime, timedelta
 from typing import List
 from langchain_core.tools import tool
-from schemas.anomaly import AnomalySchema
+from multi_agents.tools.schemas.anomaly import AnomalySchema
 
 
 @tool(args_schema=AnomalySchema)
 def anomaly_detection(sku_ids: List[str], lookback_days: int = 30) -> str:
+    """
+    Tool used to detect
+    :param sku_ids:
+    :param lookback_days:
+    :return:
+    """
     output = []
     for sku_id in sku_ids:
         output.append(detect_anomalies(sku_id, lookback_days))

@@ -37,3 +37,5 @@ order_and_return_agent_toolkit = [
 ]
 
 supervisor_workers = []
+
+tool_maps = {"web_search": web_search}

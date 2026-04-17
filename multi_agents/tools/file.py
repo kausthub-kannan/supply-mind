@@ -14,6 +14,12 @@ s3_client = boto3.client(
 
 @tool(description="A tool to upload files to S3")
 def upload_file(key: str, content: str, content_type="text/html"):
+    """
+    Tool used to upload HTML or text file to S3 bucket
+    :param key: str - The file name or key
+    :param content: str - The data or bytes of the file
+    :param content_type: str - Type of content to be saved, by default text/html
+    """
     s3_client.put_object(
         Bucket=os.getenv("REPORT_BUCKET"),
         Key=key,

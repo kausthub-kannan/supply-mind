@@ -17,6 +17,12 @@ class ForecastSchema(BaseModel):
 
 @tool(args_schema=ForecastSchema)
 def forecast_orders(sku_ids: List[str], days: int = 30) -> str:
+    """
+
+    :param sku_ids:
+    :param days:
+    :return:
+    """
     output = []
     for sku_id in sku_ids:
         output.append(generate_forecast(sku_id, days))

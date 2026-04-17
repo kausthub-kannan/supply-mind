@@ -9,7 +9,7 @@ import psycopg2.extras
 from psycopg2 import sql, OperationalError, DatabaseError
 from langchain_core.tools import tool
 
-from schemas.db import SelectInput, UpdateInput, InsertInput
+from multi_agents.tools.schemas.db import SelectInput, UpdateInput, InsertInput
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -74,6 +74,16 @@ def sql_select(
     order_by: Optional[str] = None,
     limit: int = 50,
 ) -> str:
+    """
+
+    :param table:
+    :param columns:
+    :param where:
+    :param params:
+    :param order_by:
+    :param limit:
+    :return:
+    """
     try:
         _validate_table(table)
         if columns != ["*"]:
