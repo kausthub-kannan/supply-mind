@@ -12,25 +12,25 @@ from multi_agents.agents.schemas.supplier_request_input import SupplierRequestIn
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import supplier_analysis_agent_toolkit, tool_maps
 from multi_agents.utils.helper import summarizer
-import agentops
 import logging
+import agentops
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-agentops.init(default_tags=['supplier_analysis'])
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
 
 
 # ---------------------- STATE ---------------------------
+@agentops.agent
 class SearchState(MessagesState):
     input_data: SupplierRequestInputs
     urls: Annotated[list, operator.add]
 
 
 # ----------------------- NODES ----------------------------
+@agentops.task(name="Initialize Input")
 def input_node(state: SearchState):
     if state.get("messages"):
         return {}
@@ -54,6 +54,7 @@ def input_node(state: SearchState):
     )
 
 
+@agentops.operation(name="Model Inference")
 def model_call_node(state: SearchState) -> Command:
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     response = model.invoke(messages)
@@ -64,6 +65,7 @@ def model_call_node(state: SearchState) -> Command:
         return Command(goto=END, update={"messages": [response]})
 
 
+@agentops.tool(name="Supplier Serach Tool Execution")
 def tool_call_node(state: SearchState):
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
@@ -111,9 +113,12 @@ supplier_analysis_agent_builder.add_node("model_call_node", model_call_node)
 supplier_analysis_agent_builder.add_node("tool_call_node", tool_call_node)
 
 supplier_analysis_agent_builder.add_edge(START, "input_node")
-supplier_analysis_agent = supplier_analysis_agent_builder.compile()
+supplier_analysis_agent = supplier_analysis_agent_builder.compile().with_config(
+    {"recursion_limit": 10}
+)
 
 if __name__ == "__main__":
+    agentops.init()
     result_messages = supplier_analysis_agent.invoke(
         {
             "input_data": SupplierRequestInputs(
@@ -123,8 +128,7 @@ if __name__ == "__main__":
                 suppliers_list=["Central Computers (CA)", "Newegg Commerce (CA)"],
             ),
             "urls": [],
-        },
-        config={"recursion_limit": 10},
+        }
     )
 
     result_messages["messages"][-1].pretty_print()

@@ -12,5 +12,6 @@ general_settings:
 
 litellm_settings:
   drop_params: true
+  detailed_debug: true
   set_verbose: true
-  success_callback: ["langfuse"]
+  request_logging: true
