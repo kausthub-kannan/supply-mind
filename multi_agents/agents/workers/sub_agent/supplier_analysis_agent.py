@@ -18,6 +18,8 @@ import agentops
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+agentops.init()
+
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
 
@@ -65,7 +67,7 @@ def model_call_node(state: SearchState) -> Command:
         return Command(goto=END, update={"messages": [response]})
 
 
-@agentops.tool(name="Supplier Serach Tool Execution")
+@agentops.tool(name="Supplier Search Tool Execution")
 def tool_call_node(state: SearchState):
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
@@ -118,7 +120,6 @@ supplier_analysis_agent = supplier_analysis_agent_builder.compile().with_config(
 )
 
 if __name__ == "__main__":
-    agentops.init()
     result_messages = supplier_analysis_agent.invoke(
         {
             "input_data": SupplierRequestInputs(

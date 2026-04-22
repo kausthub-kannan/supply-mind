@@ -14,10 +14,7 @@ from multi_agents.tools.reports.graph import (
 from multi_agents.tools.forecast import forecast_orders
 from multi_agents.tools.anomaly import anomaly_detection
 
-forecast_agent_toolkit = [sql_select, forecast_orders]
-anomaly_agent_toolkit = [sql_select, anomaly_detection]
 report_generation_toolkit = [
-    upload_file,
     create_donut_plot,
     create_scatter_plot,
     create_kpi_banner,
@@ -38,4 +35,16 @@ order_and_return_agent_toolkit = [
 
 supervisor_workers = []
 
-tool_maps = {"web_search": web_search}
+tool_maps = {
+    "web_search": web_search,
+    "forecast_orders": forecast_orders,
+    "anomaly_detection": anomaly_detection,
+    "create_donut_plot": create_donut_plot,
+    "create_scatter_plot": create_scatter_plot,
+    "create_kpi_banner": create_kpi_banner,
+    "create_line_chart": create_line_chart,
+    "create_step_chart": create_step_chart,
+    "create_dual_axis_chart": create_dual_axis_chart,
+    "data_card": data_card,
+    "data_table": data_table,
+}
