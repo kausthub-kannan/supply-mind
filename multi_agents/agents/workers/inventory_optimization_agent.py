@@ -1,16 +1,14 @@
 import operator
-from typing import Annotated, TypedDict
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from typing import Annotated
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.types import Command, Send
 
-from multi_agents.agents.schemas.supplier_request_input import SupplierRequestInputs
-from multi_agents.agents.toolkits import tool_maps
-from multi_agents.agents.workers.sub_agent.report_generator_agent import report_generator_agent
-from multi_agents.agents.workers.sub_agent.supplier_analysis_agent import (
-    supplier_analysis_agent,
+from multi_agents.agents.schemas.sku_graph_input import SKUState
+from multi_agents.agents.workers.sub_agent.report_generator_agent import (
+    report_generator_agent,
 )
-from multi_agents.utils.db import get_inventory, get_suppliers_for_sku
+from multi_agents.agents.workers.sub_agent.sku_level_analysis_agent import sku_subgraph
+from multi_agents.utils.db import get_inventory
 from multi_agents.utils.llm_inference import get_model
 import json
 import logging
@@ -18,8 +16,6 @@ import agentops
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-DEFAULT_FORECAST_DAYS = 30
 
 # ──────────────────────────── MODELS ────────────────────────────
 model = get_model("mistral-large")
@@ -30,171 +26,53 @@ model = get_model("mistral-large")
 class InventoryOptimisationState(MessagesState):
     report: str
     current_date: str
-    total_sku_count: int  # ← NEW: set once in input_node
-    forecast_data: Annotated[list, operator.add]
-    anomaly_detected_data: Annotated[list, operator.add]
-    supervisor_reply_message: str
-    human_approval_status: bool
-    supplier_analysis_data: Annotated[list, operator.add]
-
-
-class SKUState(TypedDict):
-    sku_id: str
-    sku_name: str
-    current_date: str
-    current_stock_quantity: int
-    region: str
     forecast_data: Annotated[list, operator.add]
     anomaly_detected_data: Annotated[list, operator.add]
     supplier_analysis_data: Annotated[list, operator.add]
-    total_sku_count: int
 
 
 # ──────────────────────────── NODES ─────────────────────────────
 
 
 @agentops.operation(name="Initialize Agent Input")
-def input_node(state: InventoryOptimisationState):
-    skus_data = get_inventory()[:1]
-    total = len(skus_data)
-    sends = []
-    for sku_data in skus_data:
-        payload = {
-            "sku_id": sku_data["sku_id"],
-            "sku_name": sku_data["sku_name"],
-            "current_date": state["current_date"],
-            "current_stock_quantity": sku_data["current_quantity"],
-            "region": sku_data["region"],
-            "total_sku_count": total,
-        }
-        sends.append(Send("forecast_node", payload))
-        sends.append(Send("anomaly_detection_node", payload))
+def input_node(state: InventoryOptimisationState) -> Command:
+    """Fetches inventory and triggers parallel processing for each SKU."""
+    skus_data = get_inventory()[:2]
 
-    return Command(
-        goto=sends,
-        update={"total_sku_count": total},
-    )
-
-
-@agentops.tool(name="Forecast Inventory Stocks")
-def forecast_node(state: SKUState) -> Command:
-    sku_id = state["sku_id"]
-
-    tool_output = tool_maps["forecast_orders"].invoke(
-        {
-            "sku_id": sku_id,
-            "days": DEFAULT_FORECAST_DAYS,
-        }
-    )
-    forecast_result = (
-        tool_output.content if hasattr(tool_output, "content") else tool_output
-    )
-
-    return Command(
-        goto=Send(
-            "supplier_analysis_node",
+    sends = [
+        Send(
+            "process_sku",
             {
-                **state,
-                "forecast_data": [{"sku_id": sku_id, "forecast": forecast_result}],
+                "sku_id": sku["sku_id"],
+                "sku_name": sku["sku_name"],
+                "current_date": state["current_date"],
+                "current_stock_quantity": sku["current_quantity"],
+                "region": sku["region"],
             },
-        ),
-        update={"forecast_data": [{"sku_id": sku_id, "forecast": forecast_result}]},
-    )
-
-
-@agentops.tool(name="Detect Anomaly Inventory Stocks")
-def anomaly_detection_node(state: SKUState) -> Command:
-    """Detect anomalies for one SKU and forward to the barrier node."""
-    sku_id = state["sku_id"]
-
-    anomaly_result = {"sku_id": sku_id, "anomaly": "..."}
-
-    return Command(
-        goto="join_node",
-        update={"anomaly_detected_data": [anomaly_result]},
-    )
-
-
-@agentops.tool(name="Supplier Analysis")
-def supplier_analysis_node(state: SKUState) -> Command:
-    sku_id = state["sku_id"]
-
-    forecast_entry = next(
-        (d for d in state.get("forecast_data", []) if d["sku_id"] == sku_id),
-        None,
-    )
-    if forecast_entry is None:
-        logger.warning(
-            "No forecast data for sku_id=%s; skipping supplier analysis.", sku_id
         )
-        return Command(
-            goto="join_node",
-            update={"supplier_analysis_data": [{"sku_id": sku_id, "analysis": None}]},
-        )
-
-    forecast = json.loads(forecast_entry["forecast"])
-    order_quantity = forecast["order_quantity"]
-    delivery_date = forecast["delivery_date"]
-
-    suppliers_list = [s["supplier_name"] for s in get_suppliers_for_sku(sku_id.lower())]
-
-    result_messages = supplier_analysis_agent.invoke(
-        {
-            "input_data": SupplierRequestInputs(
-                sku_name=state["sku_name"],
-                order_quantity=order_quantity,
-                delivery_date=delivery_date,
-                suppliers_list=suppliers_list,
-            ),
-            "urls": [],
-        }
-    )
-
-    return Command(
-        goto="join_node",
-        update={
-            "supplier_analysis_data": [
-                {"sku_id": sku_id, "analysis": result_messages["messages"][-1].content}
-            ]
-        },
-    )
+        for sku in skus_data
+    ]
+    # Use Command to perform the dynamic fan-out
+    return Command(goto=sends)
 
 
-# ──────────────────────────── BARRIER / JOIN NODE ───────────────
+async def process_sku_node(state: SKUState) -> dict:
+    result = await sku_subgraph.ainvoke(state)
+    return {
+        "forecast_data": [result["forecast_result"]],
+        "anomaly_detected_data": [result["anomaly_result"]],
+        "supplier_analysis_data": [result["supplier_analysis_result"]],
+    }
 
 
-@agentops.operation(name="Join Barrier")
-def join_node(state: InventoryOptimisationState) -> Command:
+def collect_sku_results(state: InventoryOptimisationState):
     """
-    Fan-in barrier. Each SKU contributes:
-      - 1 anomaly result  (from anomaly_detection_node)
-      - 1 supplier result (from supplier_analysis_node, after forecast)
-
-    We only proceed to report_generation_node once ALL SKUs have
-    delivered both results.
+    Runs once after ALL sku subgraphs finish.
+    Lift subgraph outputs into the parent state.
+    LangGraph passes subgraph output via parent state reducers automatically
+    when the subgraph node is added with `add_node`.
     """
-    total = state.get("total_sku_count", 0)
-    anomaly_count = len(state.get("anomaly_detected_data", []))
-    supplier_count = len(state.get("supplier_analysis_data", []))
-
-    logger.info(
-        "join_node: total_skus=%d  anomalies=%d  supplier_analyses=%d",
-        total,
-        anomaly_count,
-        supplier_count,
-    )
-
-    if anomaly_count >= total and supplier_count >= total:
-        logger.info("All SKUs processed, moving to report generation")
-        return Command(goto="report_generation_node")
-    else:
-        # Still waiting for more results — stay idle (return empty update)
-        return Command(
-            goto=END if total == 0 else []
-        )  # no-op; LangGraph will re-invoke when more updates arrive
-
-
-# ──────────────────────────── DOWNSTREAM NODES ──────────────────
+    return {}
 
 
 @agentops.operation(name="Report Generation")
@@ -250,14 +128,7 @@ def supervisor_communication(state: InventoryOptimisationState) -> Command:
 inventory_optimization_agent_builder = StateGraph(InventoryOptimisationState)
 
 inventory_optimization_agent_builder.add_node("input_node", input_node)
-inventory_optimization_agent_builder.add_node("forecast_node", forecast_node)
-inventory_optimization_agent_builder.add_node(
-    "anomaly_detection_node", anomaly_detection_node
-)
-inventory_optimization_agent_builder.add_node(
-    "supplier_analysis_node", supplier_analysis_node
-)
-inventory_optimization_agent_builder.add_node("join_node", join_node)  # ← NEW
+inventory_optimization_agent_builder.add_node("process_sku", process_sku_node)
 inventory_optimization_agent_builder.add_node(
     "report_generation_node", report_generation_node
 )
@@ -272,6 +143,17 @@ inventory_optimization_agent_builder.add_node(
 )
 
 inventory_optimization_agent_builder.add_edge(START, "input_node")
+inventory_optimization_agent_builder.add_edge("process_sku", "report_generation_node")
+inventory_optimization_agent_builder.add_edge(
+    "report_generation_node", "reorder_assessment_node"
+)
+inventory_optimization_agent_builder.add_edge(
+    "reorder_assessment_node", "db_status_update_node"
+)
+inventory_optimization_agent_builder.add_edge(
+    "db_status_update_node", "supervisor_communication"
+)
+inventory_optimization_agent_builder.add_edge("supervisor_communication", END)
 
 inventory_optimization_agent = (
     inventory_optimization_agent_builder.compile().with_config(
@@ -280,21 +162,27 @@ inventory_optimization_agent = (
 )
 
 
-if __name__ == "__main__":
+async def main():  # 2. Wrap the execution in an async function
     from datetime import datetime
 
     agentops.init()
-    result = inventory_optimization_agent.invoke(
-        {
-            "messages": [],
-            "current_date": datetime.now().strftime("%Y-%m-%d"),
-            "total_sku_count": 0,
-            "forecast_data": [],
-            "anomaly_detected_data": [],
-            "supplier_analysis_data": [],
-            "report": "",
-            "supervisor_reply_message": "",
-            "human_approval_status": False,
-        }
-    )
-    print(result["report"])
+
+    initial_state = {
+        "messages": [],
+        "current_date": datetime.now().strftime("%Y-%m-%d"),
+        "forecast_data": [],
+        "anomaly_detected_data": [],
+        "supplier_analysis_data": [],
+        "report": "",
+    }
+
+    # 3. Use await and ainvoke()
+    result = await inventory_optimization_agent.ainvoke(initial_state)
+    print(f"FINAL REPORT:\n{result['report']}")
+
+
+if __name__ == "__main__":
+    # 4. Use the asyncio runner
+    import asyncio
+
+    asyncio.run(main())

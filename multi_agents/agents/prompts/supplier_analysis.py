@@ -25,7 +25,7 @@ Your core responsibility: Research candidate suppliers systematically, then deli
 6. **Market Position** — industry reputation, customer base quality, competitive standing, awards/recognition, differentiation vs. competitors
 7. **Logistics & Geography** — primary locations, distribution network, tariff/customs considerations, supply chain vulnerabilities
 
-**Stopping Condition:** After 4-7 targeted searches, STOP all tool usage immediately, regardless of completeness. Proceed to Phase 2 with available intelligence.
+**Stopping Condition:** After 4 targeted searches, STOP all tool usage immediately, regardless of completeness. Proceed to Phase 2 with available intelligence.
 
 ---
 

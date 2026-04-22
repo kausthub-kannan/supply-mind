@@ -7,17 +7,14 @@ from multi_agents.tools.schemas.anomaly import AnomalySchema
 
 
 @tool(args_schema=AnomalySchema)
-def anomaly_detection(sku_ids: List[str], lookback_days: int = 30) -> str:
+def anomaly_detection(sku_id: str, lookback_days: int = 30) -> str:
     """
     Tool used to detect
-    :param sku_ids:
+    :param sku_id:
     :param lookback_days:
     :return:
     """
-    output = []
-    for sku_id in sku_ids:
-        output.append(detect_anomalies(sku_id, lookback_days))
-
+    output = detect_anomalies(sku_id, lookback_days)
     return json.dumps(output, indent=2)
 
 
