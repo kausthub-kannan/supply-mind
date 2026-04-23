@@ -1,5 +1,8 @@
 import os
 from langchain_openai import ChatOpenAI
+import agentops
+
+agentops.init()
 
 
 def get_model(model_name, tools=None, temperature=0):

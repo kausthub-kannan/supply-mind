@@ -1,7 +1,6 @@
 from sqlalchemy import Table, MetaData, select, create_engine, join
 import os
 import urllib.parse
-import json
 
 user = os.getenv("POSTGRES_USER")
 password = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD"))

@@ -1,7 +1,6 @@
 from multi_agents.tools.search import web_search
 from multi_agents.tools.gmail import send_email, read_email
 from multi_agents.tools.db import sql_insert, sql_select, sql_update
-from multi_agents.tools.file import upload_file
 from multi_agents.tools.reports.html import data_card, data_table
 from multi_agents.tools.reports.graph import (
     create_donut_plot,

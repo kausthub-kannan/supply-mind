@@ -90,13 +90,14 @@ async def sku_supplier_node(state: SKUState):
         "supplier_analysis_result": {
             "sku_id": state["sku_id"],
             "analysis": result["messages"][-1].content,
+            "urls": result["urls"],
         }
     }
 
 
 sku_subgraph_builder = StateGraph(SKUState)
-sku_subgraph_builder.add_node("parallel_node", sku_parallel_node)  # forecast + anomaly
-sku_subgraph_builder.add_node("supplier_node", sku_supplier_node)  # depends on forecast
+sku_subgraph_builder.add_node("parallel_node", sku_parallel_node)
+sku_subgraph_builder.add_node("supplier_node", sku_supplier_node)
 
 sku_subgraph_builder.add_edge(START, "parallel_node")
 sku_subgraph_builder.add_edge("parallel_node", "supplier_node")

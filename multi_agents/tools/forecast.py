@@ -1,7 +1,6 @@
 import json
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
-from typing import List
 import random
 from datetime import datetime, timedelta
 

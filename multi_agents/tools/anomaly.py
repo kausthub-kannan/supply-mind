@@ -1,7 +1,6 @@
 import json
 import random
 from datetime import datetime, timedelta
-from typing import List
 from langchain_core.tools import tool
 from multi_agents.tools.schemas.anomaly import AnomalySchema
 

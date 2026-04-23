@@ -9,6 +9,7 @@ from multi_agents.agents.workers.sub_agent.report_generator_agent import (
 )
 from multi_agents.agents.workers.sub_agent.sku_level_analysis_agent import sku_subgraph
 from multi_agents.utils.db import get_inventory
+from multi_agents.utils.file import upload_file
 from multi_agents.utils.llm_inference import get_model
 import json
 import logging
@@ -17,24 +18,23 @@ import agentops
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+agentops.init()
+
 # ──────────────────────────── MODELS ────────────────────────────
 model = get_model("mistral-large")
 
 
 # ──────────────────────────── STATE ─────────────────────────────
-@agentops.agent
 class InventoryOptimisationState(MessagesState):
     report: str
     current_date: str
     forecast_data: Annotated[list, operator.add]
     anomaly_detected_data: Annotated[list, operator.add]
     supplier_analysis_data: Annotated[list, operator.add]
+    workflow_id: str
 
 
 # ──────────────────────────── NODES ─────────────────────────────
-
-
-@agentops.operation(name="Initialize Agent Input")
 def input_node(state: InventoryOptimisationState) -> Command:
     """Fetches inventory and triggers parallel processing for each SKU."""
     skus_data = get_inventory()[:2]
@@ -75,7 +75,6 @@ def collect_sku_results(state: InventoryOptimisationState):
     return {}
 
 
-@agentops.operation(name="Report Generation")
 def report_generation_node(state: InventoryOptimisationState) -> Command:
     """Merge forecast, anomaly, and supplier data into a per-SKU report."""
     logger.info("Entered report generation")
@@ -103,23 +102,22 @@ def report_generation_node(state: InventoryOptimisationState) -> Command:
         }
     )
 
+    upload_file(f"{state["workflow_id"]}/report.html", result_messages["report"])
+
     return Command(
         goto="reorder_assessment_node",
         update={"report": result_messages["report"]},
     )
 
 
-@agentops.operation(name="Reorder Assessment")
 def reorder_assessment_node(state: InventoryOptimisationState) -> Command:
     return Command(goto="db_status_update_node")
 
 
-@agentops.operation(name="DB Changes - Reorder SKUs")
 def db_status_update_node(state: InventoryOptimisationState) -> Command:
     return Command(goto="supervisor_communication")
 
 
-@agentops.operation(name="Supervisor Communication")
 def supervisor_communication(state: InventoryOptimisationState) -> Command:
     return Command(goto=END)
 
@@ -162,27 +160,27 @@ inventory_optimization_agent = (
 )
 
 
-async def main():  # 2. Wrap the execution in an async function
+async def main():
     from datetime import datetime
+    import uuid
 
-    agentops.init()
-
-    initial_state = {
-        "messages": [],
-        "current_date": datetime.now().strftime("%Y-%m-%d"),
-        "forecast_data": [],
-        "anomaly_detected_data": [],
-        "supplier_analysis_data": [],
-        "report": "",
-    }
-
-    # 3. Use await and ainvoke()
-    result = await inventory_optimization_agent.ainvoke(initial_state)
+    trace = agentops.start_trace("inventory-optimization-agent")
+    result = await inventory_optimization_agent.ainvoke(
+        {
+            "messages": [],
+            "current_date": datetime.now().strftime("%Y-%m-%d"),
+            "forecast_data": [],
+            "anomaly_detected_data": [],
+            "supplier_analysis_data": [],
+            "report": "",
+            "workflow_id": str(uuid.uuid4()),
+        }
+    )
+    agentops.end_trace(trace, "Success")
     print(f"FINAL REPORT:\n{result['report']}")
 
 
 if __name__ == "__main__":
-    # 4. Use the asyncio runner
     import asyncio
 
     asyncio.run(main())

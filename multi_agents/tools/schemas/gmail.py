@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Type
+from typing import Optional
 
 
 class ReadEmailInput(BaseModel):

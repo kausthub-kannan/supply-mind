@@ -25,14 +25,12 @@ model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
 
 
 # ---------------------- STATE ---------------------------
-@agentops.agent
 class SearchState(MessagesState):
     input_data: SupplierRequestInputs
     urls: Annotated[list, operator.add]
 
 
 # ----------------------- NODES ----------------------------
-@agentops.task(name="Initialize Input")
 def input_node(state: SearchState):
     if state.get("messages"):
         return {}
@@ -56,7 +54,6 @@ def input_node(state: SearchState):
     )
 
 
-@agentops.operation(name="Model Inference")
 def model_call_node(state: SearchState) -> Command:
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     response = model.invoke(messages)
@@ -67,7 +64,6 @@ def model_call_node(state: SearchState) -> Command:
         return Command(goto=END, update={"messages": [response]})
 
 
-@agentops.tool(name="Supplier Search Tool Execution")
 def tool_call_node(state: SearchState):
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
