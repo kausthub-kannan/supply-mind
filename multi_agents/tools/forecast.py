@@ -1,13 +1,12 @@
 import json
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
-from typing import List
 import random
 from datetime import datetime, timedelta
 
 
 class ForecastSchema(BaseModel):
-    sku_ids: str = Field(
+    sku_id: str = Field(
         description="The unique SKU identifier to generate the forecast for."
     )
     days: int = Field(
@@ -16,16 +15,14 @@ class ForecastSchema(BaseModel):
 
 
 @tool(args_schema=ForecastSchema)
-def forecast_orders(sku_ids: List[str], days: int = 30) -> str:
+def forecast_orders(sku_id: str, days: int = 30) -> str:
     """
     Forecast orders for given SKU based on historical data
-    :param sku_ids: list - List of sku ids predictions need to be performed on
+    :param sku_id: str - sku id for predictions need to be performed on
     :param days: int - number of days for prediction window
     :return: str - JSON string of the forecasted output which contains LIST OF forecast demands for every day and reorder for all skus
     """
-    output = []
-    for sku_id in sku_ids:
-        output.append(generate_forecast(sku_id, days))
+    output = generate_forecast(sku_id, days)
 
     return json.dumps(output, indent=2)
 
@@ -71,8 +68,9 @@ def generate_forecast(sku_id: str, days: int = 30, current_stock: int = 150) -> 
             "sku_id": sku_id,
             "forecast_generated_at": forecast_date,
             "forecast_horizon_days": days,
-            "expected_delivery_date": expected_delivery_date,
+            "delivery_date": expected_delivery_date,
             "data": forecast_list,
+            "order_quantity": sum([fd["forecasted_demand"] for fd in forecast_list]),
         }
 
     except Exception as e:

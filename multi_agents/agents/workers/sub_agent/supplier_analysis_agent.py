@@ -3,12 +3,12 @@ from typing import Annotated
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.types import Command
-from multi_agents.agents.prompts.supplier_analysis import (
+from multi_agents.prompts.supplier_analysis import (
     system_prompt,
     summarizer_prompt,
     user_prompt,
 )
-from multi_agents.agents.schemas.supplier_request_input import SupplierRequestInputs
+from pydantic import BaseModel, Field, field_validator
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import supplier_analysis_agent_toolkit, tool_maps
 from multi_agents.utils.helper import summarizer
@@ -18,24 +18,47 @@ import agentops
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+agentops.init()
+
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
 
 
 # ---------------------- STATE ---------------------------
-@agentops.agent
+class SupplierAnalysisInput(BaseModel):
+    sku_name: str = Field(description="The exact SKU name or identifier")
+    order_quantity: int = Field(
+        gt=0, description="Order quantity must be greater than 0"
+    )
+    delivery_date: str = Field(description="Expected delivery date")
+    suppliers_list: list[str] = Field(
+        default_factory=list, description="List of target suppliers to analyze"
+    )
+
+    @field_validator("suppliers_list")
+    def check_suppliers(cls, v):
+        if not v:
+            raise ValueError("At least one supplier must be provided.")
+        return v
+
+
+class SupplierAnalysisOutput(BaseModel):
+    analysis: str = Field(description="Analysis report obtained after research")
+    urls: list[str] = Field(description="Sources from which analysis was obtained")
+
+
 class SearchState(MessagesState):
-    input_data: SupplierRequestInputs
+    input_data: SupplierAnalysisInput
     urls: Annotated[list, operator.add]
+    output_data: SupplierAnalysisOutput
 
 
 # ----------------------- NODES ----------------------------
-@agentops.task(name="Initialize Input")
 def input_node(state: SearchState):
     if state.get("messages"):
         return {}
 
-    req: SupplierRequestInputs = state["input_data"]
+    req: SupplierAnalysisInput = state["input_data"]
 
     return Command(
         goto="model_call_node",
@@ -54,7 +77,6 @@ def input_node(state: SearchState):
     )
 
 
-@agentops.operation(name="Model Inference")
 def model_call_node(state: SearchState) -> Command:
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     response = model.invoke(messages)
@@ -62,10 +84,17 @@ def model_call_node(state: SearchState) -> Command:
     if response.tool_calls:
         return Command(goto="tool_call_node", update={"messages": [response]})
     else:
-        return Command(goto=END, update={"messages": [response]})
+        return Command(
+            goto=END,
+            update={
+                "messages": [response],
+                "output_data": SupplierAnalysisOutput(
+                    analysis=state["messages"][-1].content, urls=state["urls"]
+                ),
+            },
+        )
 
 
-@agentops.tool(name="Supplier Serach Tool Execution")
 def tool_call_node(state: SearchState):
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
@@ -118,10 +147,9 @@ supplier_analysis_agent = supplier_analysis_agent_builder.compile().with_config(
 )
 
 if __name__ == "__main__":
-    agentops.init()
     result_messages = supplier_analysis_agent.invoke(
         {
-            "input_data": SupplierRequestInputs(
+            "input_data": SupplierAnalysisInput(
                 sku_name="NVIDIA RTX 5090 32GB (ASUS/MSI)",
                 order_quantity=100,
                 delivery_date="22-04-2026",
@@ -131,4 +159,4 @@ if __name__ == "__main__":
         }
     )
 
-    result_messages["messages"][-1].pretty_print()
+    print(result_messages["output_data"].analysis)
