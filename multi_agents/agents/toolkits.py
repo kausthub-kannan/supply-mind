@@ -32,8 +32,6 @@ order_and_return_agent_toolkit = [
     sql_update,
 ]
 
-supervisor_workers = []
-
 tool_maps = {
     "web_search": web_search,
     "forecast_orders": forecast_orders,
@@ -46,4 +44,9 @@ tool_maps = {
     "create_dual_axis_chart": create_dual_axis_chart,
     "data_card": data_card,
     "data_table": data_table,
+    "send_email": send_email,
+    "read_email": read_email,
+    "sql_insert": sql_insert,
+    "sql_select": sql_select,
+    "sql_update": sql_update,
 }

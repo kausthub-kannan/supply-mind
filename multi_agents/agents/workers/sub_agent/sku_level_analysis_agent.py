@@ -1,16 +1,27 @@
 import asyncio
-from langgraph.graph import END, START, StateGraph
+from typing import TypedDict
 
-from multi_agents.agents.schemas.sku_graph_input import SKUState
-from multi_agents.agents.schemas.supplier_request_input import SupplierRequestInputs
+from langgraph.graph import END, START, StateGraph
 from multi_agents.agents.toolkits import tool_maps
 from multi_agents.agents.workers.sub_agent.supplier_analysis_agent import (
     supplier_analysis_agent,
+    SupplierAnalysisInput,
 )
 from multi_agents.utils.db import get_suppliers_for_sku
 import json
 
 DEFAULT_FORECAST_DAYS = 30
+
+
+class SKUState(TypedDict):
+    sku_id: str
+    sku_name: str
+    current_date: str
+    current_stock_quantity: int
+    region: str
+    forecast_result: dict | None
+    anomaly_result: dict | None
+    supplier_analysis_result: dict | None
 
 
 async def sku_forecast_node(state: SKUState):
@@ -77,7 +88,7 @@ async def sku_supplier_node(state: SKUState):
 
     result = await supplier_analysis_agent.ainvoke(
         {
-            "input_data": SupplierRequestInputs(
+            "input_data": SupplierAnalysisInput(
                 sku_name=state["sku_name"],
                 order_quantity=forecast["order_quantity"],
                 delivery_date=forecast["delivery_date"],
@@ -89,8 +100,8 @@ async def sku_supplier_node(state: SKUState):
     return {
         "supplier_analysis_result": {
             "sku_id": state["sku_id"],
-            "analysis": result["messages"][-1].content,
-            "urls": result["urls"],
+            "analysis": result["output_data"].analysis,
+            "urls": result["output_data"].urls,
         }
     }
 

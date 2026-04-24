@@ -3,42 +3,42 @@ from typing import Annotated
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.types import Command, Send
 
-from multi_agents.agents.schemas.sku_graph_input import SKUState
 from multi_agents.agents.workers.sub_agent.report_generator_agent import (
     report_generator_agent,
 )
-from multi_agents.agents.workers.sub_agent.sku_level_analysis_agent import sku_subgraph
+from multi_agents.agents.workers.sub_agent.sku_level_analysis_agent import (
+    sku_subgraph,
+    SKUState,
+)
 from multi_agents.utils.db import get_inventory
 from multi_agents.utils.file import upload_file
-from multi_agents.utils.llm_inference import get_model
 import json
-import logging
 import agentops
+from datetime import datetime
+from langchain_core.tools import tool
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+from multi_agents.utils.logger import setup_logger
 
-agentops.init()
-
-# ──────────────────────────── MODELS ────────────────────────────
-model = get_model("mistral-large")
+logger = setup_logger()
 
 
 # ──────────────────────────── STATE ─────────────────────────────
 class InventoryOptimisationState(MessagesState):
-    report: str
+    workflow_id: str
+    skus_data: dict
     current_date: str
+    report: str
     forecast_data: Annotated[list, operator.add]
     anomaly_detected_data: Annotated[list, operator.add]
     supplier_analysis_data: Annotated[list, operator.add]
-    workflow_id: str
+    decision_report: str
+    reorder_status: bool
+    sku_order_data: str
+    in_hitl: bool
 
 
 # ──────────────────────────── NODES ─────────────────────────────
 def input_node(state: InventoryOptimisationState) -> Command:
-    """Fetches inventory and triggers parallel processing for each SKU."""
-    skus_data = get_inventory()[:2]
-
     sends = [
         Send(
             "process_sku",
@@ -50,34 +50,27 @@ def input_node(state: InventoryOptimisationState) -> Command:
                 "region": sku["region"],
             },
         )
-        for sku in skus_data
+        for sku in state["skus_data"]
     ]
-    # Use Command to perform the dynamic fan-out
+
     return Command(goto=sends)
 
 
 async def process_sku_node(state: SKUState) -> dict:
-    result = await sku_subgraph.ainvoke(state)
-    return {
-        "forecast_data": [result["forecast_result"]],
-        "anomaly_detected_data": [result["anomaly_result"]],
-        "supplier_analysis_data": [result["supplier_analysis_result"]],
-    }
-
-
-def collect_sku_results(state: InventoryOptimisationState):
-    """
-    Runs once after ALL sku subgraphs finish.
-    Lift subgraph outputs into the parent state.
-    LangGraph passes subgraph output via parent state reducers automatically
-    when the subgraph node is added with `add_node`.
-    """
-    return {}
+    try:
+        result = await sku_subgraph.ainvoke(state)
+        return {
+            "forecast_data": [result["forecast_result"]],
+            "anomaly_detected_data": [result["anomaly_result"]],
+            "supplier_analysis_data": [result["supplier_analysis_result"]],
+        }
+    except Exception as e:
+        err_msg = f"Failed to process SKU {state.get('sku_id')}: {e}"
+        logger.error(err_msg)
+        raise err_msg
 
 
 def report_generation_node(state: InventoryOptimisationState) -> Command:
-    """Merge forecast, anomaly, and supplier data into a per-SKU report."""
-    logger.info("Entered report generation")
     forecast_by_sku = {d["sku_id"]: d for d in state.get("forecast_data", [])}
     anomaly_by_sku = {d["sku_id"]: d for d in state.get("anomaly_detected_data", [])}
     supplier_by_sku = {d["sku_id"]: d for d in state.get("supplier_analysis_data", [])}
@@ -93,16 +86,21 @@ def report_generation_node(state: InventoryOptimisationState) -> Command:
         for sku_id in all_sku_ids
     ]
 
-    result_messages = report_generator_agent.invoke(
-        {
-            "analysis_raw_data": json.dumps(per_sku_reports),
-            "graphs": [],
-            "content_cards": [],
-            "report": "",
-        }
-    )
-
-    upload_file(f"{state["workflow_id"]}/report.html", result_messages["report"])
+    try:
+        result_messages = report_generator_agent.invoke(
+            {
+                "analysis_raw_data": json.dumps(per_sku_reports),
+                "graphs": [],
+                "content_cards": [],
+                "report": "",
+            }
+        )
+    except Exception as e:
+        err_msg = (
+            f"Failed to generate report for workflow {state.get('workflow_id')}: {e}"
+        )
+        logger.error(err_msg)
+        raise err_msg
 
     return Command(
         goto="reorder_assessment_node",
@@ -111,15 +109,7 @@ def report_generation_node(state: InventoryOptimisationState) -> Command:
 
 
 def reorder_assessment_node(state: InventoryOptimisationState) -> Command:
-    return Command(goto="db_status_update_node")
-
-
-def db_status_update_node(state: InventoryOptimisationState) -> Command:
-    return Command(goto="supervisor_communication")
-
-
-def supervisor_communication(state: InventoryOptimisationState) -> Command:
-    return Command(goto=END)
+    return Command(goto=END, update={"in_hitl": True})
 
 
 # ──────────────────────────── GRAPH ─────────────────────────────
@@ -133,25 +123,13 @@ inventory_optimization_agent_builder.add_node(
 inventory_optimization_agent_builder.add_node(
     "reorder_assessment_node", reorder_assessment_node
 )
-inventory_optimization_agent_builder.add_node(
-    "db_status_update_node", db_status_update_node
-)
-inventory_optimization_agent_builder.add_node(
-    "supervisor_communication", supervisor_communication
-)
 
 inventory_optimization_agent_builder.add_edge(START, "input_node")
 inventory_optimization_agent_builder.add_edge("process_sku", "report_generation_node")
 inventory_optimization_agent_builder.add_edge(
     "report_generation_node", "reorder_assessment_node"
 )
-inventory_optimization_agent_builder.add_edge(
-    "reorder_assessment_node", "db_status_update_node"
-)
-inventory_optimization_agent_builder.add_edge(
-    "db_status_update_node", "supervisor_communication"
-)
-inventory_optimization_agent_builder.add_edge("supervisor_communication", END)
+inventory_optimization_agent_builder.add_edge("reorder_assessment_node", END)
 
 inventory_optimization_agent = (
     inventory_optimization_agent_builder.compile().with_config(
@@ -160,27 +138,45 @@ inventory_optimization_agent = (
 )
 
 
-async def main():
-    from datetime import datetime
-    import uuid
-
-    trace = agentops.start_trace("inventory-optimization-agent")
-    result = await inventory_optimization_agent.ainvoke(
-        {
-            "messages": [],
-            "current_date": datetime.now().strftime("%Y-%m-%d"),
-            "forecast_data": [],
-            "anomaly_detected_data": [],
-            "supplier_analysis_data": [],
-            "report": "",
-            "workflow_id": str(uuid.uuid4()),
+@tool
+async def run_inventory_optimization_agent(workflow_id: str):
+    """
+    Sub Agent (wrapped as a tool) which starts inventory optimization which includes generating demand forecast and anomaly report based on realtime news and historical data and to decide if and how much reorder needs to be done
+    :param workflow_id: To track the flow
+    :return: result of the agent workflow which includes reorder status, sku level data (suppliers and order quantity for each sku)
+    """
+    try:
+        skus_data = get_inventory()[:2]
+        result = await inventory_optimization_agent.ainvoke(
+            {
+                "skus_data": skus_data,
+                "messages": [],
+                "current_date": datetime.now().strftime("%Y-%m-%d"),
+                "forecast_data": [],
+                "anomaly_detected_data": [],
+                "supplier_analysis_data": [],
+                "report": "",
+                "workflow_id": workflow_id,
+            }
+        )
+        upload_file(f"{workflow_id}/report.html", result["report"])
+        upload_file(f"{workflow_id}/decision_report.html", result["report"])
+        return {
+            "result": json.dumps(
+                {
+                    "reorder_status": result["reorder_status"],
+                    "sku_order_data": result["sku_order_data"],
+                }
+            ),
+            "in_hitl": result["in_hitl"],
         }
-    )
-    agentops.end_trace(trace, "Success")
-    print(f"FINAL REPORT:\n{result['report']}")
+
+    except Exception as e:
+        logger.error(f"Workflow {workflow_id} failed: {e}")
+        raise e
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+    trace = agentops.start_trace("inventory-optimization-agent")
+    run_inventory_optimization_agent.ainvoke({"workflow_id": "ex-id-123"})
+    agentops.end_trace(trace, "Success")

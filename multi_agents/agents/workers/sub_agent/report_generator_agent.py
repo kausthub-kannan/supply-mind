@@ -3,7 +3,7 @@ from typing import Annotated
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.types import Command
-from multi_agents.agents.prompts.report_generation import system_prompt, user_prompt
+from multi_agents.prompts.report_generation import system_prompt, user_prompt
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import report_generation_toolkit, tool_maps
 import logging

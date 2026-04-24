@@ -68,7 +68,7 @@ if __name__ == "__main__":
     upload_file(json_key, '{"status": "ok"}', content_type="application/json")
     json_response = s3_client.head_object(Bucket=test_bucket, Key=json_key)
     assert json_response["ContentType"] == "application/json", "Content-Type mismatch"
-    print(f"  ✓ JSON file uploaded with correct content type\n")
+    print("  ✓ JSON file uploaded with correct content type\n")
 
     # Cleanup
     print("Cleaning up test objects...")
