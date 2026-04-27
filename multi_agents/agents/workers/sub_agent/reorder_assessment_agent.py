@@ -165,8 +165,7 @@ reorder_assessment_agent = reorder_assessment_agent_builder.compile().with_confi
 )
 
 if __name__ == "__main__":
-    mock_html_report = """```html
-<!DOCTYPE html>
+    mock_html_report = """DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -179,127 +178,87 @@ if __name__ == "__main__":
             --brand-primary: #72BAA9;
             --brand-secondary: #AE2448;
             --brand-dark: #6E1A37;
-            --text-primary: #333333;
-            --text-secondary: #666666;
-            --background: #FFFFFF;
-            --card-bg: #F9F9F9;
-            --border-color: #EAEAEA;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: var(--text-primary);
-            background-color: var(--background);
+            color: #333;
+            background-color: #f9f9f9;
             margin: 0;
-            padding: 0;
+            padding: 20px;
         }
 
-        .container {
+        .report-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
         header {
+            background-color: var(--brand-dark);
+            color: #fff;
+            padding: 20px;
             text-align: center;
-            padding: 30px 0;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 30px;
         }
 
-        h1 {
-            color: var(--brand-dark);
+        header h1 {
             margin: 0;
-            font-size: 2.2em;
+            font-size: 28px;
         }
 
-        .report-date {
-            color: var(--text-secondary);
-            font-size: 0.9em;
-            margin-top: 10px;
+        .report-meta {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 5px;
         }
 
         .executive-summary {
-            background-color: var(--card-bg);
-            border-left: 4px solid var(--brand-primary);
             padding: 20px;
-            margin-bottom: 40px;
-            border-radius: 0 4px 4px 0;
+            border-bottom: 1px solid #eee;
         }
 
         .executive-summary h2 {
-            color: var(--brand-dark);
+            color: var(--brand-secondary);
             margin-top: 0;
+            font-size: 22px;
         }
 
-        .kpi-banner {
-            display: flex;
-            justify-content: space-around;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .kpi-card {
-            background-color: var(--background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            flex: 1;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .kpi-card h3 {
-            color: var(--text-secondary);
-            font-size: 1em;
-            margin-top: 0;
-        }
-
-        .kpi-card p {
-            font-size: 2em;
-            color: var(--brand-dark);
-            margin: 10px 0 0;
-            font-weight: 600;
+        .executive-summary p {
+            margin-bottom: 15px;
         }
 
         section {
-            margin-bottom: 50px;
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        section:last-child {
+            border-bottom: none;
         }
 
         .sku-header {
-            background-color: var(--brand-light);
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 15px;
         }
 
         .sku-header h2 {
+            color: var(--brand-primary);
             margin: 0;
+            font-size: 24px;
+        }
+
+        .sku-id {
+            background-color: var(--brand-light);
             color: var(--brand-dark);
-        }
-
-        .sku-header p {
-            margin: 0;
-            color: var(--text-secondary);
-            font-size: 0.9em;
-        }
-
-        .section-content {
-            padding: 25px;
-        }
-
-        .section-content h3 {
-            color: var(--brand-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
         }
 
         .chart-container {
@@ -308,429 +267,260 @@ if __name__ == "__main__":
             margin: 20px 0;
         }
 
-        .data-card {
-            background-color: var(--background);
-            border-left: 4px solid var(--brand-primary);
+        .anomaly-list {
+            background-color: #f9f9f9;
             padding: 15px;
-            margin: 20px 0;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .data-card h4 {
-            margin-top: 0;
-            color: var(--brand-dark);
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        li {
-            margin-bottom: 8px;
-        }
-
-        blockquote {
+            border-radius: 4px;
             border-left: 4px solid var(--brand-secondary);
-            background-color: rgba(174, 36, 72, 0.05);
+        }
+
+        .anomaly-list h3 {
+            margin-top: 0;
+            color: var(--brand-secondary);
+        }
+
+        .anomaly-item {
+            margin-bottom: 10px;
+        }
+
+        .anomaly-item strong {
+            color: var(--brand-secondary);
+        }
+
+        .supplier-analysis {
+            background-color: #fff;
+            border: 1px solid #eee;
+            border-radius: 4px;
             padding: 15px;
-            margin: 20px 0;
-            font-style: italic;
-            color: var(--text-secondary);
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
+        .supplier-analysis h3 {
+            margin-top: 0;
+            color: var(--brand-primary);
         }
 
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
+        .supplier-analysis h4 {
+            color: var(--brand-secondary);
         }
 
-        th {
-            background-color: var(--brand-light);
-            color: var(--brand-dark);
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background-color: rgba(114, 186, 169, 0.1);
-        }
-
-        footer {
-            text-align: center;
+        .references {
             padding: 20px;
-            color: var(--text-secondary);
-            font-size: 0.8em;
-            border-top: 1px solid var(--border-color);
-            margin-top: 40px;
+            background-color: #f9f9f9;
         }
 
-        .sources {
-            text-align: left;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .sources h3 {
+        .references h3 {
             color: var(--brand-dark);
         }
 
-        .sources ul {
-            columns: 2;
+        .references ul {
+            list-style-type: none;
+            padding: 0;
         }
 
-        .sources li {
+        .references li {
             margin-bottom: 5px;
-            word-break: break-all;
+        }
+
+        .references a {
+            color: var(--brand-primary);
+            text-decoration: none;
+        }
+
+        .references a:hover {
+            text-decoration: underline;
+        }
+
+        .kpi-banner {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .kpi-card {
+            background-color: var(--brand-light);
+            border-left: 5px solid var(--brand-primary);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .kpi-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--brand-dark);
+        }
+
+        .kpi-card p {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--brand-secondary);
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="report-container">
         <header>
             <h1>Demand Forecast & Supply Chain Report</h1>
-            <p class="report-date">Generated on: <strong>2026-04-24</strong></p>
+            <p class="report-meta">Generated on: <strong>2026-04-27</strong></p>
         </header>
 
         <div class="executive-summary">
             <h2>Executive Summary</h2>
-            <p>This report provides a comprehensive analysis of the 30-day demand forecast, anomaly detection, and supplier strategy for two high-priority SKUs: <strong>ASUS ROG Maximus Z890 (LGA1851)</strong> and <strong>MSI MEG X870E GODLIKE (AM5)</strong>. The analysis is designed to support data-driven inventory optimization and procurement decisions.</p>
-            <p>The forecast data indicates a <strong>stable demand trend</strong> for both SKUs, with minor fluctuations. However, <strong>one medium-severity anomaly</strong> was detected for each SKU, requiring further review to determine potential root causes and corrective actions.</p>
-            <p>Supplier analysis reveals that <strong>Newegg Commerce</strong> and <strong>ASI Corp</strong> are the optimal suppliers for the Z890 and X870E SKUs, respectively, based on their capacity, logistics infrastructure, and bulk-order flexibility. However, <strong>residual risks</strong> such as financial volatility and geographic concentration necessitate proactive mitigation strategies, including dual sourcing and contractual safeguards.</p>
+            <p>
+                This report provides a comprehensive analysis of the demand forecast, anomaly detection, and supplier risk assessment for the <strong>MSI MEG X870E GODLIKE (MB-X870-AM5)</strong> motherboard over a 30-day horizon.
+            </p>
+            <p>
+                The forecast indicates a <strong>total order quantity of 3,078 units</strong>, with daily demand fluctuating between <strong>85 and 120 units</strong>. Three critical anomalies were detected in the historical data, requiring immediate review to mitigate potential supply chain disruptions.
+            </p>
+            <p>
+                The supplier analysis for <strong>D&H Distributing Company</strong> reveals significant operational and reputational risks, including chronic order fulfillment delays, misleading pricing practices, and poor customer service responsiveness. These factors necessitate a direct audit or consideration of alternative suppliers for time-sensitive procurements.
+            </p>
         </div>
-
-        <div class="kpi-banner">
-            <div class="kpi-card">
-                <h3>Total Order Quantity (Z890)</h3>
-                <p>8,785</p>
-            </div>
-            <div class="kpi-card">
-                <h3>Total Order Quantity (X870E)</h3>
-                <p>6,542</p>
-            </div>
-            <div class="kpi-card">
-                <h3>Total Anomalies Detected</h3>
-                <p>2</p>
-            </div>
-            <div class="kpi-card">
-                <h3>Forecast Horizon (Days)</h3>
-                <p>30</p>
-            </div>
-        </div>
-
-        <!-- SKU: MB-Z890-LGA1851 -->
-        <section>
-            <div class="sku-header">
-                <h2>ASUS ROG Maximus Z890 (Intel LGA1851)</h2>
-                <p>SKU ID: MB-Z890-LGA1851</p>
-            </div>
-            <div class="section-content">
-                <h3>30-Day Demand Forecast</h3>
-                <div class="chart-container" id="forecast-z890"></div>
-                <script>
-                    var forecastData = {
-                        x: [
-                            "2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30",
-                            "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06",
-                            "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12",
-                            "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17", "2026-05-18",
-                            "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"
-                        ],
-                        y: [
-                            285, 308, 308, 309, 295, 295, 300, 281, 293, 280, 293, 275, 304, 291, 309, 300, 299,
-                            306, 281, 280, 279, 306, 282, 281, 304, 287, 292, 279, 294, 289
-                        ]
-                    };
-                    var trace = {
-                        x: forecastData.x,
-                        y: forecastData.y,
-                        type: 'line',
-                        mode: 'lines+markers',
-                        marker: { color: '#72BAA9', size: 8 },
-                        line: { color: '#AE2448', width: 3 }
-                    };
-                    var layout = {
-                        title: '30-Day Forecasted Demand for ASUS ROG Maximus Z890',
-                        xaxis: { title: 'Date', gridcolor: '#EAEAEA' },
-                        yaxis: { title: 'Forecasted Demand (Units)', gridcolor: '#EAEAEA' },
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        paper_bgcolor: 'rgba(0,0,0,0)'
-                    };
-                    Plotly.newPlot('forecast-z890', [trace], layout);
-                </script>
-
-                <div class="data-card">
-                    <h4>Key Insights</h4>
-                    <p>The demand forecast for the ASUS ROG Maximus Z890 shows a <strong>stable trend</strong> with minor fluctuations, averaging <strong>~293 units per day</strong>. The highest demand is projected on <strong>2026-05-12 (306 units)</strong>, while the lowest is on <strong>2026-05-06 (275 units)</strong>. The total order quantity required to meet this demand is <strong>8,785 units</strong>.</p>
-                </div>
-
-                <h3>Anomaly Detection</h3>
-                <div class="chart-container" id="anomaly-z890"></div>
-                <script>
-                    var anomalyData = {
-                        x: ["2026-04-17"],
-                        y: [1],
-                        text: ["Return Rates Anomaly"],
-                        type: 'scatter',
-                        mode: 'markers',
-                        marker: { color: '#AE2448', size: 12 }
-                    };
-                    var forecastTrace = {
-                        x: forecastData.x,
-                        y: forecastData.y,
-                        type: 'line',
-                        mode: 'lines',
-                        line: { color: '#72BAA9', width: 2 },
-                        name: 'Forecasted Demand'
-                    };
-                    var layout = {
-                        title: 'Detected Anomalies in Historical Data',
-                        xaxis: { title: 'Date', gridcolor: '#EAEAEA' },
-                        yaxis: { title: 'Anomaly Indicator', showgrid: false },
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        paper_bgcolor: 'rgba(0,0,0,0)',
-                        showlegend: true
-                    };
-                    Plotly.newPlot('anomaly-z890', [forecastTrace, anomalyData], layout);
-                </script>
-
-                <div class="data-card">
-                    <h4>Anomaly Breakdown</h4>
-                    <ul>
-                        <li><strong>Date:</strong> 2026-04-17</li>
-                        <li><strong>Type:</strong> Return Rates</li>
-                        <li><strong>Severity:</strong> Medium</li>
-                        <li><strong>Description:</strong> Statistical deviation detected matching a 'Return Rates' profile. This may indicate a temporary spike in product returns, potentially due to quality control issues, shipping damage, or customer dissatisfaction.</li>
-                        <li><strong>Action Required:</strong> No immediate human review is required, but it is recommended to investigate the root cause (e.g., batch quality, logistics partners) to prevent recurrence.</li>
-                    </ul>
-                </div>
-
-                <h3>Supplier Strategy</h3>
-                <p>The following supplier has been identified as the optimal choice for fulfilling the order:</p>
-                <blockquote>
-                    <strong>Recommended Supplier:</strong> Newegg Commerce (CA)
-                </blockquote>
-                <div class="data-card">
-                    <h4>Selection Rationale</h4>
-                    <p>Newegg Commerce is the <strong>only viable supplier</strong> for fulfilling an order of <strong>8,785 units</strong> by <strong>April 20, 2026</strong>. Key advantages include:</p>
-                    <ul>
-                        <li><strong>B2B/3PL Services:</strong> Newegg offers established business-to-business and third-party logistics services, enabling bulk inventory aggregation and flexible order fulfillment.</li>
-                        <li><strong>National Distribution Network:</strong> Their Cincinnati distribution hub reduces transit risks for nationwide delivery.</li>
-                        <li><strong>Supplier Leverage:</strong> Direct relationships with ASUS and major distributors (e.g., Ingram Micro, Synnex) ensure priority access to inventory.</li>
-                        <li><strong>Custom Quoting:</strong> Newegg's hybrid retail-fulfillment model allows for negotiable pricing and flexible minimum order quantities (MOQs).</li>
-                    </ul>
-                </div>
-
-                <div class="data-card">
-                    <h4>Why Other Candidates Were Not Selected</h4>
-                    <p><strong>Central Computers (CA):</strong></p>
-                    <ul>
-                        <li><strong>Limited Scale:</strong> Central Computers is a regional retailer with ~$19M annual revenue and five physical locations in Northern California. It lacks the inventory capacity and logistics infrastructure to fulfill large-scale orders.</li>
-                        <li><strong>Indirect Supplier Relationships:</strong> Their reliance on distributors like Ingram Micro limits their ability to negotiate lead times or secure bulk inventory.</li>
-                        <li><strong>Operational Constraints:</strong> Their focus on SMB/reseller channels and lack of transparent SLAs make them unreliable for time-sensitive, large-scale deployments.</li>
-                    </ul>
-                </div>
-
-                <div class="data-card">
-                    <h4>Risk Assessment & Mitigation</h4>
-                    <p><strong>Residual Risks:</strong></p>
-                    <ul>
-                        <li><strong>Financial Volatility:</strong> Newegg's publicly traded status (NASDAQ: NEGG) and historical profitability fluctuations introduce counterparty risk.</li>
-                        <li><strong>Single-Hub Logistics:</strong> Reliance on a single U.S. distribution center (Cincinnati) creates bottleneck risks.</li>
-                        <li><strong>Component Shortages:</strong> Potential supply constraints for PCIe 5.0 M.2 slots and WiFi 7 modules due to controller IC shortages.</li>
-                    </ul>
-                    <p><strong>Recommended Mitigations:</strong></p>
-                    <ul>
-                        <li><strong>Dual Sourcing:</strong> Secure a secondary supplier (e.g., ASUS direct B2B portal or Ingram Micro) for 20-30% of the order.</li>
-                        <li><strong>Contractual Safeguards:</strong> Negotiate firm lead-time guarantees and price-lock clauses to protect against volatility.</li>
-                        <li><strong>Logistics Redundancy:</strong> Require Newegg to pre-stage inventory by February 2026 and provide weekly shipment tracking updates.</li>
-                        <li><strong>Compliance Audit:</strong> Verify Newegg's PCI DSS and ISO 9001 compliance before finalizing the contract.</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
 
         <!-- SKU: MB-X870-AM5 -->
         <section>
             <div class="sku-header">
-                <h2>MSI MEG X870E GODLIKE (AMD AM5)</h2>
-                <p>SKU ID: MB-X870-AM5</p>
+                <h2>MSI MEG X870E GODLIKE</h2>
+                <span class="sku-id">MB-X870-AM5</span>
             </div>
-            <div class="section-content">
-                <h3>30-Day Demand Forecast</h3>
-                <div class="chart-container" id="forecast-x870"></div>
-                <script>
-                    var forecastDataX870 = {
-                        x: [
-                            "2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30",
-                            "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06",
-                            "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12",
-                            "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17", "2026-05-18",
-                            "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24"
-                        ],
-                        y: [
-                            218, 220, 211, 229, 226, 222, 202, 227, 235, 207, 208, 221, 234, 202, 200, 209, 219,
-                            229, 229, 227, 204, 203, 234, 234, 230, 229, 214, 200, 219, 200
-                        ]
-                    };
-                    var trace = {
-                        x: forecastDataX870.x,
-                        y: forecastDataX870.y,
-                        type: 'line',
-                        mode: 'lines+markers',
-                        marker: { color: '#72BAA9', size: 8 },
-                        line: { color: '#AE2448', width: 3 }
-                    };
-                    var layout = {
-                        title: '30-Day Forecasted Demand for MSI MEG X870E GODLIKE',
-                        xaxis: { title: 'Date', gridcolor: '#EAEAEA' },
-                        yaxis: { title: 'Forecasted Demand (Units)', gridcolor: '#EAEAEA' },
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        paper_bgcolor: 'rgba(0,0,0,0)'
-                    };
-                    Plotly.newPlot('forecast-x870', [trace], layout);
-                </script>
 
-                <div class="data-card">
-                    <h4>Key Insights</h4>
-                    <p>The demand forecast for the MSI MEG X870E GODLIKE shows a <strong>consistent trend</strong> with an average daily demand of <strong>~218 units</strong>. The peak demand is projected on <strong>2026-05-03 and 2026-05-17 (235 and 234 units, respectively)</strong>, while the lowest demand is on <strong>2026-05-01 (202 units)</strong>. The total order quantity required is <strong>6,542 units</strong>.</p>
+            <div class="kpi-banner">
+                <div class="kpi-card">
+                    <h4>Total Forecasted Demand (30 Days)</h4>
+                    <p>3,078</p>
                 </div>
-
-                <h3>Anomaly Detection</h3>
-                <div class="chart-container" id="anomaly-x870"></div>
-                <script>
-                    var anomalyDataX870 = {
-                        x: ["2026-04-18"],
-                        y: [1],
-                        text: ["Demand Spikes Anomaly"],
-                        type: 'scatter',
-                        mode: 'markers',
-                        marker: { color: '#AE2448', size: 12 }
-                    };
-                    var forecastTrace = {
-                        x: forecastDataX870.x,
-                        y: forecastDataX870.y,
-                        type: 'line',
-                        mode: 'lines',
-                        line: { color: '#72BAA9', width: 2 },
-                        name: 'Forecasted Demand'
-                    };
-                    var layout = {
-                        title: 'Detected Anomalies in Historical Data',
-                        xaxis: { title: 'Date', gridcolor: '#EAEAEA' },
-                        yaxis: { title: 'Anomaly Indicator', showgrid: false },
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        paper_bgcolor: 'rgba(0,0,0,0)',
-                        showlegend: true
-                    };
-                    Plotly.newPlot('anomaly-x870', [forecastTrace, anomalyDataX870], layout);
-                </script>
-
-                <div class="data-card">
-                    <h4>Anomaly Breakdown</h4>
-                    <ul>
-                        <li><strong>Date:</strong> 2026-04-18</li>
-                        <li><strong>Type:</strong> Demand Spikes</li>
-                        <li><strong>Severity:</strong> Medium</li>
-                        <li><strong>Description:</strong> Statistical deviation detected matching a 'Demand Spikes' profile. This may indicate a sudden surge in demand, potentially driven by external factors such as promotions, competitor stockouts, or market trends.</li>
-                        <li><strong>Action Required:</strong> Human review is required to assess the cause of the spike and determine if adjustments to the forecast or inventory strategy are necessary.</li>
-                    </ul>
+                <div class="kpi-card">
+                    <h4>Anomalies Detected</h4>
+                    <p>3</p>
                 </div>
+            </div>
 
-                <h3>Supplier Strategy</h3>
-                <p>The following supplier has been identified as the optimal choice for fulfilling the order:</p>
-                <blockquote>
-                    <strong>Recommended Supplier:</strong> ASI Corp
-                </blockquote>
-                <div class="data-card">
-                    <h4>Selection Rationale</h4>
-                    <p>ASI Corp demonstrates <strong>superior supply chain agility and bulk-order flexibility</strong> for the MSI MEG X870E GODLIKE. Key advantages include:</p>
-                    <ul>
-                        <li><strong>Tier 1 Distributor Status:</strong> Direct access to MSI's production pipeline reduces lead times to 8-12 weeks.</li>
-                        <li><strong>Negotiable MOQs:</strong> Flexible minimum order quantities (as low as 500 units for established partners).</li>
-                        <li><strong>Consolidated Shipping:</strong> Shipping from CA/Houston hubs minimizes logistics complexity.</li>
-                        <li><strong>Pricing Stability:</strong> Verified 2025-2026 pricing stability via partner portals.</li>
-                    </ul>
-                </div>
+            <h3>30-Day Demand Forecast</h3>
+            <div class="chart-container" id="forecast-chart-MB-X870-AM5"></div>
 
-                <div class="data-card">
-                    <h4>Why Other Candidates Were Not Selected</h4>
-                    <p><strong>D&H Distributing:</strong></p>
-                    <ul>
-                        <li><strong>Lack of Transparency:</strong> No published lead times, MOQs, or pricing tiers for the X870E GODLIKE.</li>
-                        <li><strong>Rigid Logistics:</strong> Mandatory preapproved carriers and focus on SMB/reseller channels limit flexibility.</li>
-                        <li><strong>Limited Experience:</strong> No verifiable track record for handling enterprise-scale orders (6,500+ units).</li>
-                    </ul>
-                </div>
+            <h3>Anomaly Detection Summary</h3>
+            <div class="anomaly-list">
+                <h3>Detected Anomalies</h3>
+                <ul>
+                    <li class="anomaly-item">
+                        <strong>Date:</strong> 2026-03-30 |
+                        <strong>Type:</strong> Price-Demand |
+                        <strong>Severity:</strong> Critical |
+                        <strong>Review Required:</strong> Yes |
+                        <p><em>Statistical deviation detected matching a 'Price-Demand' profile.</em></p>
+                    </li>
+                    <li class="anomaly-item">
+                        <strong>Date:</strong> 2026-04-12 |
+                        <strong>Type:</strong> Demand Spikes |
+                        <strong>Severity:</strong> Medium |
+                        <strong>Review Required:</strong> Yes |
+                        <p><em>Statistical deviation detected matching a 'Demand Spikes' profile.</em></p>
+                    </li>
+                    <li class="anomaly-item">
+                        <strong>Date:</strong> 2026-04-20 |
+                        <strong>Type:</strong> Stock Balance |
+                        <strong>Severity:</strong> Critical |
+                        <strong>Review Required:</strong> No |
+                        <p><em>Statistical deviation detected matching a 'Stock Balance' profile.</em></p>
+                    </li>
+                </ul>
+            </div>
 
-                <div class="data-card">
-                    <h4>Risk Assessment & Mitigation</h4>
-                    <p><strong>Residual Risks:</strong></p>
-                    <ul>
-                        <li><strong>Geographic Concentration:</strong> Reliance on CA/Houston warehouses creates vulnerability to regional disruptions.</li>
-                        <li><strong>Production Bottlenecks:</strong> Potential allocation limits if AMD Ryzen 9000 adoption lags.</li>
-                    </ul>
-                    <p><strong>Recommended Mitigations:</strong></p>
-                    <ul>
-                        <li><strong>Dual Sourcing:</strong> Allocate 20% of the order to a backup supplier like Synnex.</li>
-                        <li><strong>Contractual Guarantees:</strong> Include penalties for delays exceeding 10%.</li>
-                        <li><strong>Air Freight Contingencies:</strong> Pre-negotiate air freight options for critical shipments.</li>
-                    </ul>
-                </div>
+            <h3>Supplier Risk Assessment</h3>
+            <div class="supplier-analysis">
+                <h3>D&H Distributing Company</h3>
+                <h4>Operational & Reliability Risks</h4>
+                <p>
+                    D&H Distributing exhibits <strong>critical supply chain reliability issues</strong>, with multiple customer reports indicating <strong>chronic order fulfillment delays</strong> (often requiring manual follow-ups), inconsistent inventory management, and <strong>misleading pricing practices</strong>. Wholesale pricing frequently aligns with or exceeds retail market rates, undermining cost competitiveness, while the company artificially inflates "estimated retail prices" (ERPs) to create a false perception of discounts.
+                </p>
+                <p>
+                    These patterns suggest <strong>structural inefficiencies in order processing and logistics</strong>, compounded by poor customer service responsiveness—a red flag for buyers dependent on just-in-time delivery. No verifiable data exists on production capacity, lead time metrics, or facility capabilities, limiting transparency into operational resilience.
+                </p>
+
+                <h4>Financial & Reputational Concerns</h4>
+                <p>
+                    While D&H holds <strong>high-value contracts</strong> (e.g., a <strong>$3M+ blanket purchase order</strong> with Florida International University for Apple resale in 2023), its <strong>reputational risk is elevated</strong> due to persistent customer complaints about pricing integrity and fulfillment failures. The absence of recent <strong>litigation records, regulatory violations, or data breaches</strong> offers no mitigating signal; instead, the <strong>lack of third-party audits or public financial disclosures</strong> obscures financial stability.
+                </p>
+                <p>
+                    Given the <strong>active customer migration</strong> described in reviews, D&H’s market position appears vulnerable to competitors with stronger operational discipline.
+                </p>
+                <p><strong>Recommendation:</strong> Conduct a <strong>direct audit of order-to-delivery cycles</strong> and <strong>price benchmarking</strong> before engagement; explore alternative distributors for time-sensitive or cost-critical procurements.</p>
             </div>
         </section>
 
-        <div class="sources">
+        <div class="references">
             <h3>References</h3>
-            <p>The following sources were used to compile the supplier analysis and recommendations:</p>
             <ul>
-                <li><a href="https://www.newegg.com/asus-rog-maximus-z890-hero-atx-motherboard-intel-z890-lga-1851/p/N82E16813119691?srsltid=AfmBOop33kwKF5nkaMi-ozDtu09_2GRt26AUoF9rnJSAY3QWygMeWKRE" target="_blank">Newegg: ASUS ROG Maximus Z890 Hero</a></li>
-                <li><a href="https://www.newegg.com/asus-rog-maximus-z890-hero-atx-motherboard-intel-z890-lga-1851/p/N82E16813119691?srsltid=AfmBOopyfU1hYFnF-dM_fFPfk3CRjp-BTMPjTR-JRBlY7SugBsxDmOJo" target="_blank">Newegg: ASUS ROG Maximus Z890 Hero (Alternate Link)</a></li>
-                <li><a href="https://www.newegg.com/p/pl?d=rog+maximus+z890&srsltid=AfmBOoq1ogkgbtOR-aE0a_MX10tnBZkHmXb-eHMwHGjBiSJVqdLWA5Jh" target="_blank">Newegg: ROG Maximus Z890 Product Search</a></li>
-                <li><a href="https://www.newegg.com/p/pl?d=asus+rog+maximus+z890&srsltid=AfmBOooU3xzZZg2Z6qHZIzoq5IuGzfQQwyTn74BV7fAqOmOmBanOXYBU" target="_blank">Newegg: ASUS ROG Maximus Z890 Product Search</a></li>
-                <li><a href="https://www.newegg.com/p/pl?d=asus+rog+maximus+z890&srsltid=AfmBOopQUSfYWUsAu6qjcGLkQQIbMQj2LmdJeWHw1TQPcDB5eQSg4rBo" target="_blank">Newegg: ASUS ROG Maximus Z890 Product Search (Alternate)</a></li>
-                <li><a href="https://www.centralcomputer.com/all-products/hardware/motherboards/cc/in_store:Yes/price:600-700/processor_socket:Socket+AM5.html?amp%3Bproduct_type=3601&srsltid=AfmBOoqTwPfHhGLnyVMGWx-zKIpKvRhB1KFEQdi1J7StODGVjSQDtPf-" target="_blank">Central Computers: Motherboard Inventory</a></li>
-                <li><a href="https://rog.asus.com/motherboards/rog-maximus/rog-maximus-z890-apex/" target="_blank">ASUS ROG: Maximus Z890 Apex</a></li>
-                <li><a href="https://rog.asus.com/motherboards/rog-maximus/rog-maximus-z890-extreme/" target="_blank">ASUS ROG: Maximus Z890 Extreme</a></li>
-                <li><a href="https://www.centralcomputer.com/asus-rog-maximus-z890-apex-intel-z890-lga-1851-atx-motherboard-advanced-ai-pc-ready-22-2-1-2-stages-ddr5-wifi-7-5g-lan.html?srsltid=AfmBOopDJaAmdWDH60hF-HZZLtdakTHBF_4izuQE9oqGINT8JD0fjMww" target="_blank">Central Computers: ASUS ROG Maximus Z890 Apex</a></li>
-                <li><a href="https://www.centralcomputer.com/asus-rog-maximus-z890-apex-intel-z890-lga-1851-atx-motherboard-advanced-ai-pc-ready-22-2-1-2-stages-ddr5-wifi-7-5g-lan.html?srsltid=AfmBOoqw1hj3vLxbvzrBN5FJ5_jkjqno7PrjHkhT5StNtjH9Oaa23act" target="_blank">Central Computers: ASUS ROG Maximus Z890 Apex (Alternate Link)</a></li>
-                <li><a href="https://leadiq.com/c/newegg/5a1d8aa72400002400648da9" target="_blank">LeadIQ: Newegg Company Profile</a></li>
-                <li><a href="https://productfulfillmentsolutions.com/product-fulfillment-solutions-resources/minimum-order-quantity-meaning-how-to-calculate-moq-product-fulfillment-solutions/" target="_blank">Product Fulfillment Solutions: MOQ Guide</a></li>
-                <li><a href="https://www.newegg.com/corporate/about?srsltid=AfmBOoqmPVHMY8N4VoWZnkxBeyO56x1O83ASD0WxIw7tBdHEsHou88c7" target="_blank">Newegg: Corporate Information</a></li>
-                <li><a href="https://rocketreach.co/central-computers-profile_b5c7a2faf42e0d56" target="_blank">RocketReach: Central Computers Profile</a></li>
-                <li><a href="https://dclcorp.com/blog/inventory/minimum-order-quantity-moq/" target="_blank">DCL Corp: MOQ Explanation</a></li>
-                <li><a href="https://www.netsuite.com/portal/resource/articles/inventory-management/minimum-order-quantity-moq.shtml" target="_blank">NetSuite: MOQ Best Practices</a></li>
-                <li><a href="https://pcpartpicker.com/product/pRLdnQ/msi-meg-x870e-godlike-eatx-am5-motherboard-meg-x870e-godlike" target="_blank">PCPartPicker: MSI MEG X870E GODLIKE</a></li>
-                <li><a href="https://www.techpowerup.com/344087/msi-meg-x870e-godlike-x-edition-starts-selling-at-usd-1-300" target="_blank">TechPowerUp: MSI MEG X870E GODLIKE X Edition</a></li>
-                <li><a href="https://hothardware.com/news/msi-meg-x870e-godlike-x-motherboard-debuts-1300" target="_blank">HotHardware: MSI MEG X870E GODLIKE X Debut</a></li>
-                <li><a href="https://us-store.msi.com/MEG-X870E-GODLIKE?srsltid=AfmBOopKZU8zF21-Mf5u5Skf5MU1-SNzMUmgu7_EbV9sWxYn-uhc_UuV" target="_blank">MSI US Store: MEG X870E GODLIKE</a></li>
-                <li><a href="https://us-store.msi.com/MEG-X870E-GODLIKE?srsltid=AfmBOooR5hxFFqTnh6xuZuOXrk1l_-qi7x-t20vsKCTtucZ_RJjZ0ZSQ" target="_blank">MSI US Store: MEG X870E GODLIKE (Alternate Link)</a></li>
-                <li><a href="https://us-store.msi.com/MEG-X870E-GODLIKE-X-EDITION?srsltid=AfmBOoqCwlbpSOAvZS-gy4zkVbdlD6huk6doUf9MBMqZkTRLruiU9d1f" target="_blank">MSI US Store: MEG X870E GODLIKE X Edition</a></li>
-                <li><a href="https://us-store.msi.com/MEG-X870E-GODLIKE-X-EDITION?srsltid=AfmBOor8XemJgmaOtfklQ-4q4aHF8cShKyTsNZA0xBV7SvAHsAf33Gs7" target="_blank">MSI US Store: MEG X870E GODLIKE X Edition (Alternate Link)</a></li>
-                <li><a href="https://www.asipartner.com/resources/asi-insider/" target="_blank">ASI Corp: ASI Insider Resources</a></li>
-                <li><a href="https://www.asipartner.com/industrial/" target="_blank">ASI Corp: Industrial Solutions</a></li>
-                <li><a href="https://www.taipeitimes.com/News/biz/archives/2026/03/14/2003853776" target="_blank">Taipei Times: ASI Corp Business News</a></li>
-                <li><a href="https://www.dandh.com/v4/view?pageReq=Press&cmsId=2025&int_cid=PRSS&utm_campaign=PR-2025" target="_blank">D&H Distributing: Press Releases</a></li>
-                <li><a href="https://www.dandh.com/v4/view?pageReq=focusedlanding&focus=OPSB1&cid=PR27" target="_blank">D&H Distributing: Focused Landing Page</a></li>
-                <li><a href="https://www.dandh.com/" target="_blank">D&H Distributing: Homepage</a></li>
-                <li><a href="https://pangoly.com/en/price-history/msi-meg-x870e-godlike" target="_blank">Pangoly: MSI MEG X870E GODLIKE Price History</a></li>
-                <li><a href="https://www.cdw.com/product/msi-meg-x870e-godlike-gaming-desktop-motherboard-amd-x870e-chipset-sock/8236153" target="_blank">CDW: MSI MEG X870E GODLIKE Product Page</a></li>
-                <li><a href="https://geizhals.de/msi-meg-x870e-godlike-a3295178.html?hloc=&va=b&vl=&plz=&mobile=1" target="_blank">Geizhals: MSI MEG X870E GODLIKE (Germany)</a></li>
-                <li><a href="https://geizhals.at/msi-meg-x870e-godlike-a3295178.html?mobile=1" target="_blank">Geizhals: MSI MEG X870E GODLIKE (Austria)</a></li>
-                <li><a href="https://gbgmt.com/bulk-customers-questions-moq-lead-time-samples-costs" target="_blank">GBGMT: Bulk Customer FAQs</a></li>
-                <li><a href="https://www.xianxingbeauty.com/buying-wholesale-press-on-nails-moq-shipping.html" target="_blank">XianXing Beauty: Wholesale MOQ Guide</a></li>
-                <li><a href="https://www.dandh.com/docs/vendor/US-DomesticSupplierRoutingGuide.pdf" target="_blank">D&H Distributing: US Domestic Supplier Routing Guide</a></li>
+                <li><a href="https://pangoly.com/en/price-history/msi-meg-x870e-godlike" target="_blank">MSI MEG X870E GODLIKE Price History - Pangoly</a></li>
+                <li><a href="https://us-store.msi.com/MEG-X870E-GODLIKE" target="_blank">MSI Official Store - MEG X870E GODLIKE</a></li>
+                <li><a href="https://www.cdw.com/product/msi-meg-x870e-godlike-gaming-desktop-motherboard-amd-x870e-chipset-sock/8236153" target="_blank">CDW Product Listing - MSI MEG X870E GODLIKE</a></li>
+                <li><a href="https://videocardz.com/newz/msi-launches-1300-meg-x870e-godlike-x-edition-motherboard-limited-to-1000-units-for-godlikes-10th-anniversary" target="_blank">VideoCardz - MSI MEG X870E GODLIKE X Edition Launch</a></li>
+                <li><a href="https://www.techpowerup.com/344087/msi-meg-x870e-godlike-x-edition-starts-selling-at-usd-1-300" target="_blank">TechPowerUp - MSI MEG X870E GODLIKE X Edition Pricing</a></li>
+                <li><a href="https://www.msi.com/Motherboard/MEG-X870E-GODLIKE-X-EDITION" target="_blank">MSI Official Product Page - MEG X870E GODLIKE X Edition</a></li>
+                <li><a href="https://pcpartpicker.com/product/pRLdnQ/msi-meg-x870e-godlike-eatx-am5-motherboard-meg-x870e-godlike" target="_blank">PCPartPicker - MSI MEG X870E GODLIKE</a></li>
+                <li><a href="https://www.mediasourceinc.com/" target="_blank">Media Source Inc.</a></li>
+                <li><a href="https://www.energy.gov/sites/default/files/2024-03/doe-fy-2025-budget-vol-4-v3.pdf" target="_blank">U.S. Department of Energy FY 2025 Budget</a></li>
+                <li><a href="https://www.solidificationcourse.com/" target="_blank">Solidification Course</a></li>
+                <li><a href="https://www.multybyte.com/blogs/from-moq-to-lead-time-faqs-for-first-time-buyers-of-bulk-electronics-in-india-from-multybyte" target="_blank">Multybyte - MOQ & Lead Time FAQs for Bulk Electronics Buyers</a></li>
+                <li><a href="https://www.dandh.com/v4/view?pageReq=Press&cmsId=2024&int_cid=PRSS&utm_campaign=PR-2024" target="_blank">D&H Distributing Press Releases</a></li>
+                <li><a href="https://insights.made-in-china.com/Understanding-MOQ-Minimum-Order-Quantity-in-Bulk-Orders_zGYtFvryaQDl.html" target="_blank">Made-in-China - Understanding MOQ in Bulk Orders</a></li>
+                <li><a href="https://members.asicentral.com/research/end-buyer-research-series/" target="_blank">ASI Central - End Buyer Research Series</a></li>
+                <li><a href="https://www.grantpud.org/templates/galaxy/images/2026-02-17_FYI_Packet.pdf" target="_blank">Grant PUD FYI Packet</a></li>
+                <li><a href="https://www.yotpo.com/case-studies/bulk-case-study" target="_blank">Yotpo - Bulk Case Study</a></li>
+                <li><a href="https://www.bbb.org/us/pa/lower-paxton/profile/video-equipment-manufacturers/d-h-distributing-company-0241-70005449/customer-reviews" target="_blank">BBB - D&H Distributing Customer Reviews</a></li>
+                <li><a href="https://trustees.fiu.edu/_assets/docs/complete-e_agenda_ff_9.14.23-3-compressed.pdf" target="_blank">FIU Trustees - Contracts & Agreements</a></li>
+                <li><a href="https://dojmt.gov/office-of-consumer-protection/reported-data-breaches/" target="_blank">Montana DOJ - Reported Data Breaches</a></li>
             </ul>
         </div>
-
-        <footer>
-            <p>&copy; 2026 Inventory Optimization System. All rights reserved.</p>
-        </footer>
     </div>
+
+    <script>
+        // Forecast Chart for MB-X870-AM5
+        const forecastData = {
+            dates: [
+                "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07",
+                "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17",
+                "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24", "2026-05-25", "2026-05-26", "2026-05-27"
+            ],
+            demand: [
+                85, 103, 90, 92, 93, 91, 117, 116, 111, 93, 100, 120, 114, 110, 96, 88, 114, 98, 86, 101, 115, 112, 96, 111, 101, 101, 119, 106, 99, 100
+            ]
+        };
+
+        const anomalyDates = ["2026-03-30", "2026-04-12", "2026-04-20"];
+        const anomalyDemand = [null, null, null]; // No demand data for anomalies, just markers
+
+        const forecastTrace = {
+            x: forecastData.dates,
+            y: forecastData.demand,
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Forecasted Demand',
+            line: { color: '#72BAA9', width: 3 }
+        };
+
+        const anomalyTrace = {
+            x: anomalyDates,
+            y: anomalyDemand,
+            type: 'scatter',
+            mode: 'markers',
+            name: 'Anomalies',
+            marker: { color: '#AE2448', size: 12, symbol: 'x' }
+        };
+
+        const layout = {
+            title: '30-Day Demand Forecast for MSI MEG X870E GODLIKE',
+            xaxis: { title: 'Date', gridcolor: '#f0f0f0' },
+            yaxis: { title: 'Forecasted Demand (Units)', gridcolor: '#f0f0f0' },
+            plot_bgcolor: '#ffffff',
+            paper_bgcolor: '#ffffff',
+            margin: { t: 40, b: 40, l: 40, r: 20 }
+        };
+
+        Plotly.newPlot('forecast-chart-MB-X870-AM5', [forecastTrace, anomalyTrace], layout);
+    </script>
 </body>
 </html>
 """

@@ -1,7 +1,8 @@
 from datetime import timedelta
 from temporalio import workflow
 
-from multi_agents.temporal.activities.run_supervisor import run_supervisor_activity
+with workflow.unsafe.imports_passed_through():
+    from multi_agents.temporal.activities.run_supervisor import run_supervisor_activity
 
 
 @workflow.defn
@@ -12,6 +13,7 @@ class SupervisorWorkflow:
 
     @workflow.signal
     def submit_feedback(self, feedback: str):
+        self._hitl_required = False
         self._human_feedback = feedback
 
     @workflow.run

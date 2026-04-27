@@ -1,12 +1,13 @@
 from langgraph.types import Command
 from temporalio import activity
-from multi_agents.agents.supervisor import supervisor_agent
+from multi_agents.agents.supervisor import get_supervisor_agent
 from multi_agents.utils.logger import setup_logger
 
 
 @activity.defn
 async def run_supervisor_activity(input_data: dict) -> dict:
     logger = setup_logger(use_agentops=True)
+    supervisor_agent = await get_supervisor_agent()
 
     config = {"configurable": {"thread_id": input_data["thread_id"]}}
 
