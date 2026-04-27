@@ -1,8 +1,12 @@
-import operator
-from typing import Annotated
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
-from langgraph.types import Command, Send
+from langgraph.types import Command
+
+from multi_agents.prompts.reorder_assessment import (
+    POSITIVE_SYSTEM_PROMPT,
+    NEGATIVE_SYSTEM_PROMPT,
+    FINAL_ASSESSMENT_SYSTEM_PROMPT,
+)
 from multi_agents.utils.llm_inference import get_model
 import logging
 import agentops
@@ -29,14 +33,6 @@ class AssessmentState(MessagesState):
     reorder_status: bool
 
 
-# ----------------------- PROMPTS --------------------------
-from multi_agents.prompts.reorder_assessment import (
-    POSITIVE_SYSTEM_PROMPT,
-    NEGATIVE_SYSTEM_PROMPT,
-    FINAL_ASSESSMENT_SYSTEM_PROMPT
-)
-
-
 # ----------------------- NODES ----------------------------
 def format_report_node(state: AssessmentState):
     raw_html = state.get("report", "")
@@ -50,7 +46,9 @@ def format_report_node(state: AssessmentState):
 def positive_critique_node(state: AssessmentState) -> Command:
     messages = [
         SystemMessage(content=POSITIVE_SYSTEM_PROMPT),
-        HumanMessage(content=f"Please analyze the following report and advocate for a reorder:\n\n{state['report']}")
+        HumanMessage(
+            content=f"Please analyze the following report and advocate for a reorder:\n\n{state['report']}"
+        ),
     ]
 
     response = model.invoke(messages)
@@ -58,10 +56,7 @@ def positive_critique_node(state: AssessmentState) -> Command:
 
     return Command(
         goto="final_assessment_node",
-        update={
-            "positive_critique": response.content,
-            "messages": [response]
-        }
+        update={"positive_critique": response.content, "messages": [response]},
     )
 
 
@@ -69,7 +64,8 @@ def negative_critique_node(state: AssessmentState) -> Command:
     messages = [
         SystemMessage(content=NEGATIVE_SYSTEM_PROMPT),
         HumanMessage(
-            content=f"Please analyze the following report and advocate against a reorder:\n\n{state['report']}")
+            content=f"Please analyze the following report and advocate against a reorder:\n\n{state['report']}"
+        ),
     ]
 
     response = model.invoke(messages)
@@ -77,10 +73,7 @@ def negative_critique_node(state: AssessmentState) -> Command:
 
     return Command(
         goto="final_assessment_node",
-        update={
-            "negative_critique": response.content,
-            "messages": [response]
-        }
+        update={"negative_critique": response.content, "messages": [response]},
     )
 
 
@@ -96,7 +89,7 @@ def final_assessment_node(state: AssessmentState) -> Command:
     
     messages = [
         SystemMessage(content=FINAL_ASSESSMENT_SYSTEM_PROMPT),
-        HumanMessage(content=human_input)
+        HumanMessage(content=human_input),
     ]
     
     # Guardrail for structured output
@@ -121,21 +114,31 @@ def final_assessment_node(state: AssessmentState) -> Command:
 
 
 # ----------------------- GRAPH BUILDER ----------------------------
-assessment_agent_builder = StateGraph(AssessmentState)
+reorder_assessment_agent_builder = StateGraph(AssessmentState)
 
-assessment_agent_builder.add_node("format_report_node", format_report_node)
-assessment_agent_builder.add_node("positive_critique_node", positive_critique_node)
-assessment_agent_builder.add_node("negative_critique_node", negative_critique_node)
-assessment_agent_builder.add_node("final_assessment_node", final_assessment_node)
+reorder_assessment_agent_builder.add_node("format_report_node", format_report_node)
+reorder_assessment_agent_builder.add_node(
+    "positive_critique_node", positive_critique_node
+)
+reorder_assessment_agent_builder.add_node(
+    "negative_critique_node", negative_critique_node
+)
+reorder_assessment_agent_builder.add_node(
+    "final_assessment_node", final_assessment_node
+)
 
 # START -> Format
-assessment_agent_builder.add_edge(START, "format_report_node")
+reorder_assessment_agent_builder.add_edge(START, "format_report_node")
 
 # Format -> Parallel Critiques
-assessment_agent_builder.add_edge("format_report_node", "positive_critique_node")
-assessment_agent_builder.add_edge("format_report_node", "negative_critique_node")
+reorder_assessment_agent_builder.add_edge(
+    "format_report_node", "positive_critique_node"
+)
+reorder_assessment_agent_builder.add_edge(
+    "format_report_node", "negative_critique_node"
+)
 
-assessment_agent = assessment_agent_builder.compile().with_config(
+reorder_assessment_agent = reorder_assessment_agent_builder.compile().with_config(
     {"recursion_limit": 5}
 )
 
@@ -194,14 +197,18 @@ gaming systems, and enterprise computing environments.
 </body>
 </html>"""
 
-    result = assessment_agent.invoke(
-        {
-            "report": mock_html_report,
-            "messages": []
-        }
+    result = reorder_assessment_agent.invoke(
+        {"report": mock_html_report, "messages": []}
     )
 
     print("--- FINAL STATE ---")
     print(f"Positive Critique:\n{result['positive_critique']}\n")
     print(f"Negative Critique:\n{result['negative_critique']}\n")
     print(f"Reorder Status: {result['reorder_status']}")
+
+    print(
+        f"LOGS\n\nPOSITIVE:\n"
+        f"{result['positive_critique']}\n"
+        f"NEGATIVE:\n"
+        f"{result['negative_critique']}"
+    )

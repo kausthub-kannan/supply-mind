@@ -2,7 +2,11 @@ import operator
 from typing import Annotated
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.types import Command, Send
+from numpy.ma.core import negative
 
+from multi_agents.agents.workers.sub_agent.reorder_assessment_agent import (
+    reorder_assessment_agent,
+)
 from multi_agents.agents.workers.sub_agent.report_generator_agent import (
     report_generator_agent,
 )
@@ -109,7 +113,24 @@ def report_generation_node(state: InventoryOptimisationState) -> Command:
 
 
 def reorder_assessment_node(state: InventoryOptimisationState) -> Command:
-    return Command(goto=END, update={"in_hitl": True})
+    result = reorder_assessment_agent.invoke(
+        {"report": state["report"], "messages": []}
+    )
+
+    decision_report = (
+        f"LOGS\n\nPOSITIVE:\n"
+        f"{result['positive_critique']}\n"
+        f"NEGATIVE:\n"
+        f"{result['negative_critique']}"
+    )
+    return Command(
+        goto=END,
+        update={
+            "in_hitl": True,
+            "decision_report": decision_report,
+            "reorder_status": result["reorder_status"],
+        },
+    )
 
 
 # ──────────────────────────── GRAPH ─────────────────────────────
@@ -146,7 +167,7 @@ async def run_inventory_optimization_agent(workflow_id: str):
     :return: result of the agent workflow which includes reorder status, sku level data (suppliers and order quantity for each sku)
     """
     try:
-        skus_data = get_inventory()[:2]
+        skus_data = get_inventory()[:1]
         result = await inventory_optimization_agent.ainvoke(
             {
                 "skus_data": skus_data,
@@ -177,6 +198,8 @@ async def run_inventory_optimization_agent(workflow_id: str):
 
 
 if __name__ == "__main__":
-    trace = agentops.start_trace("inventory-optimization-agent")
-    run_inventory_optimization_agent.ainvoke({"workflow_id": "ex-id-123"})
-    agentops.end_trace(trace, "Success")
+    # trace = agentops.start_trace("inventory-optimization-agent")
+    import asyncio
+
+    asyncio.run(run_inventory_optimization_agent.ainvoke({"workflow_id": "ex-id-123"}))
+    # agentops.end_trace(trace, "Success")
