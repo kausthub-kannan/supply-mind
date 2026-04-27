@@ -6,7 +6,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.types import Command, interrupt
-from psycopg_pool import ConnectionPool, AsyncConnectionPool
+from psycopg_pool import AsyncConnectionPool
 
 from multi_agents.agents.workers.inventory_optimization_agent import (
     run_inventory_optimization_agent,
@@ -129,41 +129,47 @@ supervisor_builder.add_node("hitl_signal_node", hitl_signal_node)
 
 supervisor_builder.add_edge(START, "input_node")
 
+_pool = None
+_supervisor_agent = None
+
+
+async def get_supervisor_agent():
+    global _pool, _supervisor_agent
+    if _supervisor_agent is None:
+        _pool = AsyncConnectionPool(conninfo=db_url, max_size=20)
+        await _pool.open()
+        checkpointer = AsyncPostgresSaver(_pool)
+        await checkpointer.setup()  # also run setup async
+        _supervisor_agent = supervisor_builder.compile(checkpointer=checkpointer)
+    return _supervisor_agent
+
+
 import asyncio
 import uuid
 
 
 async def main():
-    # 1. Initialize AsyncConnectionPool inside the running event loop
-    async with AsyncConnectionPool(conninfo=db_url, max_size=20) as pool:
+    supervisor_agent = get_supervisor_agent()
 
-        # 2. Attach the pool to the Async Checkpointer
-        checkpointer = AsyncPostgresSaver(pool)
+    wt_id = str(uuid.uuid4())
+    config = {"configurable": {"thread_id": wt_id}}
+    initial_input = {
+        "notification_message": "Start Inventory Optimization",
+        "in_hitl": False,
+        "workflow_id": wt_id,
+    }
 
-        # 3. Compile the graph with the valid checkpointer
-        supervisor_agent = supervisor_builder.compile(checkpointer=checkpointer)
+    print("--- Starting Supervisor Agent ---")
+    async for event in supervisor_agent.astream(initial_input, config=config):
+        for node_name, state_update in event.items():
+            print(f"\n[Node: {node_name}]")
 
-        wt_id = str(uuid.uuid4())
-        config = {"configurable": {"thread_id": wt_id}}
-        initial_input = {
-            "notification_message": "Start Inventory Optimization",
-            "in_hitl": False,
-            "workflow_id": wt_id,
-        }
+            if "messages" in state_update:
+                last_msg = state_update["messages"][-1]
+                print(f"Output: {last_msg.content[:100]}...")
 
-        print("--- Starting Supervisor Agent ---")
-        async for event in supervisor_agent.astream(initial_input, config=config):
-            for node_name, state_update in event.items():
-                print(f"\n[Node: {node_name}]")
-
-                if "messages" in state_update:
-                    last_msg = state_update["messages"][-1]
-                    print(f"Output: {last_msg.content[:100]}...")
-
-        # 4. Fetch the final state using the async method
-        final_state = await supervisor_agent.aget_state(config)
-        print("\n--- Final Report ---")
-        print(final_state.values.get("report", "No report generated."))
+    # 4. Fetch the final state using the async method
+    final_state = await supervisor_agent.aget_state(config)
 
 
 if __name__ == "__main__":
