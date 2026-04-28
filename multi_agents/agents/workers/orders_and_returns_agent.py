@@ -1,7 +1,8 @@
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.types import Command
-
+from datetime import datetime
+from langchain_core.tools import tool
 from multi_agents.agents.toolkits import order_and_return_agent_toolkit, tool_maps
 from multi_agents.prompts.order_and_returns import system_prompt, user_prompt
 from multi_agents.utils.llm_inference import get_model
@@ -97,21 +98,81 @@ def tool_call_node(state: EmailAgentState) -> Command:
 
 
 # ----------------------- GRAPH BUILDER ----------------------------
-email_agent_builder = StateGraph(EmailAgentState)
+orders_and_returns_agent_builder = StateGraph(EmailAgentState)
 
-email_agent_builder.add_node("input_node", input_node)
-email_agent_builder.add_node("model_call_node", model_call_node)
-email_agent_builder.add_node("tool_call_node", tool_call_node)
+orders_and_returns_agent_builder.add_node("input_node", input_node)
+orders_and_returns_agent_builder.add_node("model_call_node", model_call_node)
+orders_and_returns_agent_builder.add_node("tool_call_node", tool_call_node)
 
-email_agent_builder.add_edge(START, "input_node")
+orders_and_returns_agent_builder.add_edge(START, "input_node")
 
-email_agent = email_agent_builder.compile().with_config({"recursion_limit": 10})
+orders_and_returns_agent = orders_and_returns_agent_builder.compile().with_config(
+    {"recursion_limit": 10}
+)
+
+
+@tool
+async def run_orders_and_returns_agent(
+    workflow_id: str,
+    instruction_message: str,
+    agent_data: str,
+    in_hitl: bool = False,
+):
+    """
+    Sub Agent (wrapped as a tool) which processes order and return requests
+    including analyzing customer instructions, accessing order/return data,
+    and generating appropriate responses or actions.
+
+    :param workflow_id: To track the flow
+    :param instruction_message: The customer instruction or query (e.g., "I want to return order #123")
+    :param agent_data: Relevant data context (e.g., order details, customer info, return policy)
+    :param in_hitl: Whether to flag for human-in-the-loop review
+    :return: result of the agent workflow which includes output_data and hitl status
+    """
+    try:
+        logger.info(f"Starting orders and returns agent for workflow {workflow_id}")
+
+        # Invoke the agent with the required state
+        result = await orders_and_returns_agent.ainvoke(
+            {
+                "workflow_id": workflow_id,
+                "instruction_message": instruction_message,
+                "agent_data": agent_data,
+                "messages": [],
+                "output_data": "",
+            }
+        )
+
+        output_content = ""
+        for message in reversed(result.get("messages", [])):
+            if hasattr(message, "content") and isinstance(message.content, str):
+                output_content = message.content
+                break
+
+        final_output = result.get("output_data") or output_content
+        logger.info(f"Agent completed for workflow {workflow_id}")
+
+        return {
+            "result": json.dumps(
+                {
+                    "output_data": final_output,
+                    "workflow_id": workflow_id,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            ),
+            "in_hitl": in_hitl,
+        }
+
+    except Exception as e:
+        logger.error(f"Workflow {workflow_id} failed: {e}", exc_info=True)
+        raise e
 
 
 # ----------------------- ENTRYPOINTS ----------------------------
 if __name__ == "__main__":
     import json
-    reorder_result = email_agent.invoke(
+
+    reorder_result = orders_and_returns_agent.invoke(
         {
             "workflow_id": "REORDER-001",
             "instruction_message": "Send a fresh reorder email to Supplier XYZ",
