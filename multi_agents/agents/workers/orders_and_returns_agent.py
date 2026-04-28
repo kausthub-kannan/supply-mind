@@ -1,9 +1,6 @@
-import operator
-from typing import Annotated
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.types import Command
-from pydantic import BaseModel, Field
 
 from multi_agents.agents.toolkits import order_and_return_agent_toolkit, tool_maps
 from multi_agents.prompts.order_and_returns import system_prompt, user_prompt
@@ -15,35 +12,11 @@ logger.setLevel(logging.INFO)
 
 
 # ---------------------- STATE ---------------------------
-class EmailAgentInput(BaseModel):
-    workflow_id: str = Field(
-        description="Unique workflow identifier (e.g., REORDER-001 or RETURNS-042)"
-    )
-    instruction_message: str = Field(
-        description=(
-            "Natural language instruction — either 'send a fresh reorder mail to <supplier>' "
-            "or 'read mail from <supplier/customer> and respond to the return'"
-        )
-    )
-
-
-class EmailAgentOutput(BaseModel):
-    summary: str = Field(
-        description="Summary of what the agent did (sent/read/replied)"
-    )
-    emails_sent: list[str] = Field(
-        default_factory=list, description="Recipients of emails sent"
-    )
-    emails_read: list[str] = Field(
-        default_factory=list, description="Thread IDs or senders of emails read"
-    )
-
-
 class EmailAgentState(MessagesState):
-    input_data: EmailAgentInput
-    emails_sent: Annotated[list, operator.add]
-    emails_read: Annotated[list, operator.add]
-    output_data: EmailAgentOutput
+    workflow_id: str
+    instruction_message: str
+    agent_data: str
+    output_data: str
 
 
 # ---------------------- MODEL ---------------------------
@@ -56,15 +29,14 @@ def input_node(state: EmailAgentState):
     if state.get("messages"):
         return {}
 
-    req: EmailAgentInput = state["input_data"]
     return Command(
         goto="model_call_node",
         update={
             "messages": [
                 HumanMessage(
                     content=user_prompt.format(
-                        workflow_id=req.workflow_id,
-                        instruction_message=req.instruction_message,
+                        instruction_message=state["instruction_message"],
+                        agent_data=state["agent_data"],
                     )
                 )
             ]
@@ -86,11 +58,7 @@ def model_call_node(state: EmailAgentState) -> Command:
             goto=END,
             update={
                 "messages": [response],
-                "output_data": EmailAgentOutput(
-                    summary=response.content,
-                    emails_sent=state.get("emails_sent", []),
-                    emails_read=state.get("emails_read", []),
-                ),
+                "output_data": response.content,
             },
         )
 
@@ -100,8 +68,6 @@ def tool_call_node(state: EmailAgentState) -> Command:
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
     new_tool_messages = []
-    emails_sent = []
-    emails_read = []
 
     logger.info(f"Executing {len(tool_calls)} tool call(s)")
 
@@ -120,34 +86,13 @@ def tool_call_node(state: EmailAgentState) -> Command:
                 tool_result if isinstance(tool_result, str) else str(tool_result)
             )
 
-            # Track side effects for the output summary
-            if tool_name == "send_email":
-                recipient = tool_args.get("to", "unknown")
-                emails_sent.append(recipient)
-                logger.info(f"Email sent to: {recipient}")
-
-            elif tool_name == "read_email":
-                thread_ref = tool_args.get("thread_id") or tool_args.get(
-                    "sender", "unknown"
-                )
-                emails_read.append(thread_ref)
-                logger.info(f"Email read from thread/sender: {thread_ref}")
-
         new_tool_messages.append(
-            ToolMessage(
-                content=result_content,
-                tool_call_id=tool_id,
-                name=tool_name,
-            )
+            ToolMessage(content=result_content, tool_call_id=tool_id, name=tool_name)
         )
 
     return Command(
         goto="model_call_node",
-        update={
-            "messages": new_tool_messages,
-            "emails_sent": emails_sent,
-            "emails_read": emails_read,
-        },
+        update={"messages": new_tool_messages},
     )
 
 
@@ -165,37 +110,21 @@ email_agent = email_agent_builder.compile().with_config({"recursion_limit": 10})
 
 # ----------------------- ENTRYPOINTS ----------------------------
 if __name__ == "__main__":
-    # --- Test 1: Send a fresh reorder mail ---
+    import json
     reorder_result = email_agent.invoke(
         {
-            "input_data": EmailAgentInput(
-                workflow_id="REORDER-001",
-                instruction_message=(
-                    "Send a fresh reorder email to supplier@acme-parts.com "
-                    "for 200 units of SKU NVIDIA-RTX-5090, requesting delivery by 2026-05-15."
-                ),
+            "workflow_id": "REORDER-001",
+            "instruction_message": "Send a fresh reorder email to Supplier XYZ",
+            "agent_data": json.dumps(
+                {
+                    "supplier_email": "kausthubkannan961@gmail.com",
+                    "sku": "NVIDIA-RTX-5090",
+                    "quantity": 200,
+                    "delivery_date": "2026-05-15",
+                    "sku_name": "XYZ",
+                }
             ),
-            "emails_sent": [],
-            "emails_read": [],
         }
     )
-    print("=== REORDER RESULT ===")
-    print(reorder_result["output_data"].summary)
-
-    # --- Test 2: Read a return thread and respond ---
-    returns_result = email_agent.invoke(
-        {
-            "input_data": EmailAgentInput(
-                workflow_id="RETURNS-042",
-                instruction_message=(
-                    "Read the return request email from customer john.doe@gmail.com "
-                    "(thread ID: RET-2026-042) and send a professional reply confirming "
-                    "the return and issuing a refund within 5 business days."
-                ),
-            ),
-            "emails_sent": [],
-            "emails_read": [],
-        }
-    )
-    print("=== RETURNS RESULT ===")
-    print(returns_result["output_data"].summary)
+    print(f"Workflow ID: {reorder_result['workflow_id']}")
+    print(f"Output: {reorder_result['output_data']}")
