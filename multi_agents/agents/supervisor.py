@@ -11,6 +11,9 @@ from psycopg_pool import AsyncConnectionPool
 from multi_agents.agents.workers.inventory_optimization_agent import (
     run_inventory_optimization_agent,
 )
+from multi_agents.agents.workers.orders_and_returns_agent import (
+    run_orders_and_returns_agent,
+)
 from multi_agents.prompts.supervisor import user_prompt, system_prompt
 from multi_agents.utils.db import db_url
 from multi_agents.utils.llm_inference import get_model
@@ -19,8 +22,11 @@ import psycopg
 
 logger = setup_logger()
 
-supervisor_workers = [run_inventory_optimization_agent]
-worker_maps = {"run_inventory_optimization_agent": run_inventory_optimization_agent}
+supervisor_workers = [run_inventory_optimization_agent, run_orders_and_returns_agent]
+worker_maps = {
+    "run_inventory_optimization_agent": run_inventory_optimization_agent,
+    "run_orders_and_returns_agent": run_orders_and_returns_agent,
+}
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supervisor_workers)
