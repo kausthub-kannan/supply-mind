@@ -15,11 +15,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 DB_CONFIG = {
-    "host": os.getenv(""),
-    "port": os.getenv(""),
-    "dbname": os.getenv(""),
-    "user": os.getenv(""),
-    "password": os.getenv(""),
+    "host": "localhost",
+    "port": os.getenv("POSTGRES_PORT"),
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
 }
 
 MAX_ROWS = 500
@@ -75,14 +75,15 @@ def sql_select(
     limit: int = 50,
 ) -> str:
     """
+    Execute a SELECT query on a database table with optional filtering and sorting.
 
-    :param table:
-    :param columns:
-    :param where:
-    :param params:
-    :param order_by:
-    :param limit:
-    :return:
+    :param table: Name of the table to query from
+    :param columns: List of column names to retrieve. Defaults to ["*"] for all columns
+    :param where: Optional WHERE clause condition (e.g., "name = 'ABC'")
+    :param params: Optional list of parameters for parameterized queries to prevent SQL injection
+    :param order_by: Optional ORDER BY clause for sorting results (e.g., "created_at DESC")
+    :param limit: Maximum number of rows to return. Defaults to 50
+    :return: String representation of the query results as a formatted table or JSON
     """
     try:
         _validate_table(table)
@@ -274,3 +275,15 @@ def sql_update(
     except Exception as e:
         logger.exception("Unexpected error in sql_update")
         return f"Unexpected error: {type(e).__name__}"
+
+
+if __name__ == "__main__":
+    print(
+        sql_select.invoke(
+            input={
+                "table": "suppliers",
+                "columns": ["contact_email"],
+                "where": "supplier_name = 'D&H Distributing (FL)'",
+            }
+        )
+    )

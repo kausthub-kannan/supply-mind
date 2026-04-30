@@ -19,21 +19,21 @@ async def main():
         # Start the workflow
         # handle = await client.start_workflow(
         #     SupervisorWorkflow.run_workflow,
-        #     args=["Start the inventory optimization task for today", True],
-        #     id="supervisor-workflow-id-2",
+        #     args=["Start the inventory optimization task for today", False],
+        #     id="supervisor-workflow-id",
         #     task_queue="supervisor-task-queue",
-        #     execution_timeout=timedelta(minutes=10),
+        #     execution_timeout=timedelta(minutes=60),
         # )
-        #
+        # result = await handle.result()
         # print(f"Workflow started: {handle.id}")
 
-        handle = client.get_workflow_handle("supervisor-workflow-id-2")
+        handle = client.get_workflow_handle("supervisor-workflow-id")
         await handle.signal(
             SupervisorWorkflow.submit_feedback,
             "I approve the order, please go ahead and apply the order",
         )
-        result = await handle.result()
-        print(f"Workflow result: {result}")
+        # result = await handle.result()
+        # print(f"Workflow result: {result}")
 
         result = await handle.result()
         print(f"Workflow result: {result}")

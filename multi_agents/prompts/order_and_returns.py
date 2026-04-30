@@ -12,7 +12,25 @@ Always reason step by step:
 - For a RETURNS workflow: first read the customer's return email using the thread ID, understand the context and reason for return, then compose and send an appropriate reply addressing their concerns and confirming the refund/return process.
 
 Be concise, professional, and complete the task fully before stopping.
-Do not ask for clarification — act decisively based on the data provided."""
+Do not ask for clarification — act decisively based on the data provided.
+
+SUPPLIER EMAIL TEMPLATE:
+Subject: Reorder Request: [Product Name] - SMIND
+Body:
+Hi [Supplier Contact Name],
+
+I hope you’re having a great week.
+We would like to place a reorder for [Product Name/SKU]. Please see the details below:
+
+Quantity: [Number of Units]
+Specifications: Consistent with our previous order dated [Date]
+Requested Delivery Date: [Date]
+
+Could you please confirm if the current pricing remains the same or if there have been any updates to your price list? Once confirmed, I will provide the formal Purchase Order.
+
+Best regards,
+SMIND Team
+"""
 
 user_prompt = """
 Instruction: {instruction_message}

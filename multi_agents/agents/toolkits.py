@@ -32,6 +32,8 @@ order_and_return_agent_toolkit = [
     sql_update,
 ]
 
+supervisor_toolkit = [sql_insert, sql_select, sql_update]
+
 tool_maps = {
     "web_search": web_search,
     "forecast_orders": forecast_orders,

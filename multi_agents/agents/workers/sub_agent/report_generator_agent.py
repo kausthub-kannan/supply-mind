@@ -7,19 +7,16 @@ from multi_agents.prompts.report_generation import system_prompt, user_prompt
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import report_generation_toolkit, tool_maps
 import logging
-import agentops
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-agentops.init()
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=report_generation_toolkit)
 
 
 # ---------------------- STATE ---------------------------
-@agentops.agent
 class ReportGeneratorState(MessagesState):
     analysis_raw_data: str
     graphs: Annotated[list, operator.add]
@@ -29,7 +26,6 @@ class ReportGeneratorState(MessagesState):
 
 
 # ----------------------- NODES ----------------------------
-@agentops.task(name="Initialize Input")
 def input_node(state: ReportGeneratorState):
     if state.get("messages"):
         return Command(goto="model_call_node")
@@ -48,7 +44,6 @@ def input_node(state: ReportGeneratorState):
     )
 
 
-@agentops.operation(name="Model Inference")
 def model_call_node(state: ReportGeneratorState) -> Command:
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     response = model.invoke(messages)
@@ -61,7 +56,6 @@ def model_call_node(state: ReportGeneratorState) -> Command:
         )
 
 
-@agentops.tool(name="Report Generation Tool Execution")
 def tool_call_node(state: ReportGeneratorState):
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls

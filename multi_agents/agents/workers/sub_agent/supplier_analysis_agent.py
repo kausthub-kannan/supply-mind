@@ -13,12 +13,9 @@ from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import supplier_analysis_agent_toolkit, tool_maps
 from multi_agents.utils.helper import summarizer
 import logging
-import agentops
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-agentops.init()
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
