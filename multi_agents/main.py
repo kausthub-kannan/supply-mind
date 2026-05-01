@@ -3,7 +3,6 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 from multi_agents.temporal.workflow import SupervisorWorkflow
 from multi_agents.temporal.activities.run_supervisor import run_supervisor_activity
-from temporalio.client import WorkflowExecutionStatus
 
 TASK_QUEUE = "supervisor-task-queue"
 
