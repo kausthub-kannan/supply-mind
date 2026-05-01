@@ -88,6 +88,11 @@ def tool_call_node(state: EmailAgentState) -> Command:
                 tool_result if isinstance(tool_result, str) else str(tool_result)
             )
 
+            # --- SECURITY GUARDRAIL FOR EMAILS ---
+            if tool_name == "read_email":
+                from multi_agents.guardrails.input.email_guard import email_injection_guardrail
+                result_content = email_injection_guardrail(result_content)
+
         new_tool_messages.append(
             ToolMessage(content=result_content, tool_call_id=tool_id, name=tool_name)
         )
