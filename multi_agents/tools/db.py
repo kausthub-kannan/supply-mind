@@ -8,6 +8,7 @@ from langchain_community.utilities import SQLDatabase
 import urllib.parse
 from langchain_core.tools import tool
 import re
+import json
 
 user = os.getenv("POSTGRES_USER")
 password = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD"))
@@ -33,17 +34,14 @@ def safe_execute_query(query: str) -> str:
              If a SQL syntax error or connection error occurs, catches the exception and
              returns the error message as a string to allow the agent to self-correct.
     """
-    forbidden_words = (
-        r"\b(DELETE|DROP|INSERT|ALTER|TRUNCATE|GRANT|REVOKE|COMMIT|ROLLBACK)\b"
-    )
+    forbidden_words = r"\b(DELETE|DROP|ALTER|TRUNCATE|GRANT|REVOKE|COMMIT|ROLLBACK)\b"
     if re.search(forbidden_words, query, re.IGNORECASE):
         return (
             "Error: Security violation. You are only permitted to run SELECT queries."
         )
-    if "LIMIT" not in query.upper():
-        query = query.rstrip(";") + " LIMIT 50;"
     try:
-        return execute_query_tool.invoke(query)
+        query_results = execute_query_tool.invoke(query)
+        return json.dumps({"query_results": query_results})
     except Exception as e:
         return f"Error executing query: {str(e)}"
 

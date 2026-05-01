@@ -108,7 +108,7 @@ orders_and_returns_agent_builder.add_node("tool_call_node", tool_call_node)
 orders_and_returns_agent_builder.add_edge(START, "input_node")
 
 orders_and_returns_agent = orders_and_returns_agent_builder.compile().with_config(
-    {"recursion_limit": 10}
+    {"recursion_limit": 50}
 )
 
 
@@ -173,20 +173,33 @@ async def run_orders_and_returns_agent(
 if __name__ == "__main__":
     import json
 
+    # reorder_result = orders_and_returns_agent.invoke(
+    #     {
+    #         "workflow_id": "REORDER-001",
+    #         "instruction_message": "Send a fresh reorder email to Supplier XYZ",
+    #         "agent_data": json.dumps(
+    #             {
+    #                 "supplier_email": "kausthubkannan961@gmail.com",
+    #                 "sku": "NVIDIA-RTX-5090",
+    #                 "quantity": 200,
+    #                 "delivery_date": "2026-05-15",
+    #                 "sku_name": "XYZ",
+    #             }
+    #         ),
+    #     }
+    # )
+
     reorder_result = orders_and_returns_agent.invoke(
         {
             "workflow_id": "REORDER-001",
-            "instruction_message": "Send a fresh reorder email to Supplier XYZ",
+            "instruction_message": "Email has been recived from the supplier about one of the orders!",
             "agent_data": json.dumps(
                 {
-                    "supplier_email": "kausthubkannan961@gmail.com",
-                    "sku": "NVIDIA-RTX-5090",
-                    "quantity": 200,
-                    "delivery_date": "2026-05-15",
-                    "sku_name": "XYZ",
+                    "thread_id": "1864010885334385501",
                 }
             ),
         }
     )
+
     print(f"Workflow ID: {reorder_result['workflow_id']}")
     print(f"Output: {reorder_result['output_data']}")
