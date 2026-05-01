@@ -11,9 +11,12 @@ class SupervisorWorkflow:
         self._human_feedback = None
         self._in_hitl = False
 
-    @workflow.query
-    def get_hitl_status(self) -> bool:
-        return self._in_hitl
+    @workflow.update
+    async def wait_until_hitl_or_done(self) -> str:
+        await workflow.wait_condition(
+            lambda: self._in_hitl or self._human_feedback is not None
+        )
+        return "hitl" if self._in_hitl else "done"
 
     @workflow.signal
     def submit_feedback(self, feedback: str):

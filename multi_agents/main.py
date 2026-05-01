@@ -9,7 +9,6 @@ TASK_QUEUE = "supervisor-task-queue"
 
 
 async def run_worker_until_hitl(client: Client):
-    """Worker runs until workflow suspends at HITL, then exits."""
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -50,18 +49,10 @@ async def start_agent(message: str, thread_id: str):
         )
         print(f"Workflow started: {handle.id}")
 
-        while True:
-            await asyncio.sleep(1)
-            desc = await handle.describe()
-
-            if desc.status == WorkflowExecutionStatus.COMPLETED:
-                print("Workflow completed — shutting down.")
-                break
-
-            in_hitl = await handle.query(SupervisorWorkflow.get_hitl_status)
-            if in_hitl:
-                print("HITL triggered — shutting down worker.")
-                break
+        outcome = await handle.execute_update(
+            SupervisorWorkflow.wait_until_hitl_or_done
+        )
+        print(f"Outcome: {outcome} — shutting down worker.")
 
     print("start_agent done — container can die now.")
 
@@ -77,7 +68,6 @@ async def resume_agent(thread_id: str, feedback: str):
     )
 
     async with worker:
-        # Worker alive FIRST, then send signal
         handle = client.get_workflow_handle(thread_id)
         await handle.signal(SupervisorWorkflow.submit_feedback, feedback)
         print(f"Signal sent to: {thread_id}")
@@ -97,14 +87,17 @@ async def resume_agent(thread_id: str, feedback: str):
     print("resume_agent done — container can die now.")
 
 
-#
-if __name__ == "__main__":
-    asyncio.run(
-        resume_agent(
-            "234",
-            "HITL Confirmation Status: Order Approved | Proceed sending the email",
-        )
-    )
+thread_id = "test-id-12345"
 
 # if __name__ == "__main__":
-#     asyncio.run(start_agent("Start the inventory optimization task for today", "234"))
+#     asyncio.run(
+#         resume_agent(
+#             thread_id,
+#             "HITL Confirmation Status: Order Approved | Proceed sending the email",
+#         )
+#     )
+
+if __name__ == "__main__":
+    asyncio.run(
+        start_agent("Start the inventory optimization task for today", thread_id)
+    )
