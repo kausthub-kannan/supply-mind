@@ -7,8 +7,7 @@ Rule 1: Inventory Optimization
 - Trigger: Notification mentions inventory management or optimization
 - Actions:
   1. Trigger Inventory_Optimization_Agent
-  2. Wait for HITL evaluation and approval
-  3. If approved with reorder_status=true:
+  2. If HITL is approved with reorder_status=true:
      a. Fetch supplier contact email from 'suppliers' table via supplier_name
      b. Send reorder email to supplier using the 'order_and_returns' subagent tool
 

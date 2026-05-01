@@ -11,7 +11,6 @@ async def run_supervisor_activity(input_data: dict) -> dict:
 
     config = {"configurable": {"thread_id": input_data["thread_id"]}}
 
-    print(input_data.get("human_feedback"))
     if input_data.get("human_feedback"):
         result = await supervisor_agent.ainvoke(
             Command(resume={"feedback": input_data["human_feedback"]}), config

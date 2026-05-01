@@ -1,6 +1,7 @@
 import operator
 from typing import Annotated, List
 
+from langchain_classic.chains.question_answering.map_reduce_prompt import messages
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -75,6 +76,7 @@ def model_call_node(state: SupervisorState) -> Command:
 
     if state.get("feedback"):
         messages += [HumanMessage(content=state["feedback"])]
+
     response = model.invoke(messages)
 
     if response.tool_calls:
@@ -102,8 +104,9 @@ async def worker_call_node(state: SupervisorState):  # Added async
 
         logger.info(f"TOOL RESULTS: {tool_result}")
 
-        if isinstance(tool_result, dict) and tool_result.get("in_hitl"):
-            any_hitl_triggered = True
+        if isinstance(tool_result, dict):
+            if tool_result.get("in_hitl"):
+                any_hitl_triggered = True
             new_tool_messages.append(
                 ToolMessage(
                     content=tool_result["result"],
