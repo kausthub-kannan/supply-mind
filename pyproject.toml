@@ -27,10 +27,10 @@ boto3 = "^1.42.89"
 plotly = "^6.7.0"
 langchain-litellm = "^0.6.4"
 langchain-openai = "^1.1.14"
-agentops = "^0.4.21"
 langgraph-checkpoint-postgres = "^3.0.5"
 dotenv = "^0.9.9"
 markdownify = "^1.2.2"
+langchain-community = "^0.4.1"
 
 
 [tool.poetry.group.dev.dependencies]

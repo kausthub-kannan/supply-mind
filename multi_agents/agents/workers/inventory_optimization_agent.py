@@ -162,28 +162,37 @@ async def run_inventory_optimization_agent(workflow_id: str):
     :return: result of the agent workflow which includes reorder status, sku level data (suppliers and order quantity for each sku)
     """
     try:
-        skus_data = get_inventory()[:1]
-        result = await inventory_optimization_agent.ainvoke(
-            {
-                "skus_data": skus_data,
-                "messages": [],
-                "current_date": datetime.now().strftime("%Y-%m-%d"),
-                "forecast_data": [],
-                "anomaly_detected_data": [],
-                "supplier_analysis_data": [],
-                "report": "",
-                "workflow_id": workflow_id,
-            }
-        )
-        upload_file(f"{workflow_id}/report.html", result["report"])
-        upload_file(f"{workflow_id}/decision_report.html", result["report"])
+        # skus_data = get_inventory()[:1]
+        # result = await inventory_optimization_agent.ainvoke(
+        #     {
+        #         "skus_data": skus_data,
+        #         "messages": [],
+        #         "current_date": datetime.now().strftime("%Y-%m-%d"),
+        #         "forecast_data": [],
+        #         "anomaly_detected_data": [],
+        #         "supplier_analysis_data": [],
+        #         "report": "",
+        #         "workflow_id": workflow_id,
+        #     }
+        # )
+        # upload_file(f"{workflow_id}/report.html", result["report"])
+        # upload_file(f"{workflow_id}/decision_report.html", result["report"])
         return {
             "result": json.dumps(
                 {
-                    "sku_order_data": result["sku_order_data"],
+                    # "sku_order_data": result["sku_order_data"],
+                    "sku_order_data": [
+                        {
+                            "sku_name": "MB-X870-AM5 (MSI MEG X870E GODLIKE)",
+                            "reorder_quantity": 6545,
+                            "supplier_name": "D&H Distributing",
+                            "reorder_status": "True",
+                        }
+                    ]
                 }
             ),
-            "in_hitl": result["in_hitl"],
+            # "in_hitl": result["in_hitl"],
+            "in_hitl": True,
         }
 
     except Exception as e:
@@ -192,11 +201,9 @@ async def run_inventory_optimization_agent(workflow_id: str):
 
 
 if __name__ == "__main__":
-    # trace = agentops.start_trace("inventory-optimization-agent")
     import asyncio
 
     result = asyncio.run(
         run_inventory_optimization_agent.ainvoke({"workflow_id": "ex-id-123"})
     )
     print(result)
-    # agentops.end_trace(trace, "Success")

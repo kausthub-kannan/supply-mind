@@ -10,7 +10,6 @@ from multi_agents.prompts.reorder_assessment import (
 )
 from multi_agents.utils.llm_inference import get_model
 import logging
-import agentops
 from markdownify import markdownify
 from dotenv import load_dotenv
 from langchain_core.messages import AIMessage
@@ -20,8 +19,6 @@ import json
 load_dotenv()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-agentops.init()
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large")

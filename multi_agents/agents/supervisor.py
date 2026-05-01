@@ -1,6 +1,7 @@
 import operator
-from typing import Annotated, List, TypedDict  # Fixed import
+from typing import Annotated, List
 
+from langchain_classic.chains.question_answering.map_reduce_prompt import messages
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -18,14 +19,19 @@ from multi_agents.prompts.supervisor import user_prompt, system_prompt
 from multi_agents.utils.db import db_url
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.utils.logger import setup_logger
+from multi_agents.agents.toolkits import supervisor_toolkit, tool_maps
 import psycopg
 
 logger = setup_logger()
 
-supervisor_workers = [run_inventory_optimization_agent, run_orders_and_returns_agent]
+supervisor_workers = [
+    run_inventory_optimization_agent,
+    run_orders_and_returns_agent,
+] + supervisor_toolkit
 worker_maps = {
     "run_inventory_optimization_agent": run_inventory_optimization_agent,
     "run_orders_and_returns_agent": run_orders_and_returns_agent,
+    **tool_maps,
 }
 
 # ---------------------- MODELS ---------------------------
@@ -67,6 +73,10 @@ def model_call_node(state: SupervisorState) -> Command:
     messages = [
         SystemMessage(content=system_prompt.format(workflow_id=state["workflow_id"]))
     ] + state["messages"]
+
+    if state.get("feedback"):
+        messages += [HumanMessage(content=state["feedback"])]
+
     response = model.invoke(messages)
 
     if response.tool_calls:
@@ -92,16 +102,27 @@ async def worker_call_node(state: SupervisorState):  # Added async
         tool = worker_maps.get(worker_name)
         tool_result = await tool.ainvoke(tool_args)
 
-        if tool_result.get("in_hitl"):
-            any_hitl_triggered = True
+        logger.info(f"TOOL RESULTS: {tool_result}")
 
-        new_tool_messages.append(
-            ToolMessage(
-                content=tool_result["result"],
-                tool_call_id=tool_id,
-                name=worker_name,
+        if isinstance(tool_result, dict):
+            if tool_result.get("in_hitl"):
+                any_hitl_triggered = True
+            new_tool_messages.append(
+                ToolMessage(
+                    content=tool_result["result"],
+                    tool_call_id=tool_id,
+                    name=worker_name,
+                )
             )
-        )
+
+        if isinstance(tool_result, str):
+            new_tool_messages.append(
+                ToolMessage(
+                    content=tool_result,
+                    tool_call_id=tool_id,
+                    name=worker_name,
+                )
+            )
 
     if any_hitl_triggered:
         return Command(
@@ -145,41 +166,6 @@ async def get_supervisor_agent():
         _pool = AsyncConnectionPool(conninfo=db_url, max_size=20)
         await _pool.open()
         checkpointer = AsyncPostgresSaver(_pool)
-        await checkpointer.setup()  # also run setup async
+        await checkpointer.setup()
         _supervisor_agent = supervisor_builder.compile(checkpointer=checkpointer)
     return _supervisor_agent
-
-
-import asyncio
-import uuid
-
-
-async def main():
-    supervisor_agent = get_supervisor_agent()
-
-    wt_id = str(uuid.uuid4())
-    config = {"configurable": {"thread_id": wt_id}}
-    initial_input = {
-        "notification_message": "Start Inventory Optimization",
-        "in_hitl": False,
-        "workflow_id": wt_id,
-    }
-
-    print("--- Starting Supervisor Agent ---")
-    async for event in supervisor_agent.astream(initial_input, config=config):
-        for node_name, state_update in event.items():
-            print(f"\n[Node: {node_name}]")
-
-            if "messages" in state_update:
-                last_msg = state_update["messages"][-1]
-                print(f"Output: {last_msg.content[:100]}...")
-
-    # 4. Fetch the final state using the async method
-    final_state = await supervisor_agent.aget_state(config)
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
