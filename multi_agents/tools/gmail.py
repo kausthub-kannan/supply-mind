@@ -12,7 +12,9 @@ from typing import Optional, Dict, Any
 
 from langchain.tools import tool
 from multi_agents.tools.schemas.gmail import SendEmailInput, ReadEmailInput
+from multi_agents.utils.logger import setup_logger
 
+logger = setup_logger()
 GMAIL_EMAIL = os.getenv("GMAIL_EMAIL")
 GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
 
@@ -66,7 +68,7 @@ def _recover_sent_message(subject: str, retries: int = 5) -> Dict[str, str]:
 
             mail.logout()
         except Exception as e:
-            print(f"[_recover_sent_message] attempt {attempt + 1} failed: {e}")
+            logger.info(f"[_recover_sent_message] attempt {attempt + 1} failed: {e}")
 
         time.sleep(2)
 
@@ -177,9 +179,8 @@ def read_email(
             body = ""
             if msg.is_multipart():
                 for part in msg.walk():
-                    if (
-                        part.get_content_type() == "text/plain"
-                        and not part.get("Content-Disposition")
+                    if part.get_content_type() == "text/plain" and not part.get(
+                        "Content-Disposition"
                     ):
                         body = part.get_payload(decode=True).decode(errors="replace")
                         break
@@ -203,23 +204,3 @@ def read_email(
 
     except Exception as e:
         return f"Failed to read email: {str(e)}"
-
-
-if __name__ == "__main__":
-    # Step 1: send and capture the gmail_thread_id
-    result = send_email.invoke(
-        input={
-            "subject": "test",
-            "content": "hello",
-            "recipient": "kausthubkannan961@gmail.com",
-        }
-    )
-    print("Send result:", result)
-
-    # Step 2: read thread using gmail_thread_id
-    if result.get("gmail_thread_id"):
-        print(
-            read_email.invoke(
-                input={"gmail_thread_id": result["gmail_thread_id"]}
-            )
-        )

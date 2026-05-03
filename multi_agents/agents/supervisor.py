@@ -1,7 +1,5 @@
-import operator
-from typing import Annotated, List
+import json
 
-from langchain_classic.chains.question_answering.map_reduce_prompt import messages
 from langchain_core.messages import SystemMessage, ToolMessage, HumanMessage
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -16,7 +14,7 @@ from multi_agents.agents.workers.orders_and_returns_agent import (
     run_orders_and_returns_agent,
 )
 from multi_agents.prompts.supervisor import user_prompt, system_prompt
-from multi_agents.utils.db import db_url
+from multi_agents.utils.db import db_url, add_workflow, update_workflow
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.utils.logger import setup_logger
 from multi_agents.agents.toolkits import supervisor_toolkit, tool_maps
@@ -47,13 +45,20 @@ class SupervisorState(MessagesState):
     workflow_id: str
     notification_message: str
     in_hitl: bool
-    feedback: Annotated[List[str], operator.add]
+    feedback: str
+    hitl_node: str
 
 
 # ----------------------- NODES ----------------------------
 def input_node(state: SupervisorState):
     if state.get("messages"):
         return Command(goto="model_call_node")
+
+    add_workflow(
+        state["workflow_id"],
+        state["notification_message"],
+        state["notification_message"],
+    )
 
     return Command(
         goto="model_call_node",
@@ -75,13 +80,14 @@ def model_call_node(state: SupervisorState) -> Command:
     ] + state["messages"]
 
     if state.get("feedback"):
-        messages += [HumanMessage(content=state["feedback"])]
+        messages += [HumanMessage(content=json.dumps(state["feedback"]))]
 
     response = model.invoke(messages)
 
     if response.tool_calls:
         return Command(goto="worker_call_node", update={"messages": [response]})
     else:
+        update_workflow(state["workflow_id"], "completed")
         return Command(goto=END, update={"messages": [response]})
 
 
@@ -90,6 +96,7 @@ async def worker_call_node(state: SupervisorState):  # Added async
     tool_calls = last_message.tool_calls
     new_tool_messages = []
     any_hitl_triggered = False
+    hitl_node = ""
 
     logger.info(f"Number of tool calls will be done: {len(tool_calls)}")
 
@@ -107,6 +114,8 @@ async def worker_call_node(state: SupervisorState):  # Added async
         if isinstance(tool_result, dict):
             if tool_result.get("in_hitl"):
                 any_hitl_triggered = True
+                hitl_node = worker_name
+                logger.info(f"Requires Human-review from: {hitl_node}")
             new_tool_messages.append(
                 ToolMessage(
                     content=tool_result["result"],
@@ -127,24 +136,32 @@ async def worker_call_node(state: SupervisorState):  # Added async
     if any_hitl_triggered:
         return Command(
             goto="hitl_signal_node",
-            update={"messages": new_tool_messages, "in_hitl": True},
+            update={
+                "messages": new_tool_messages,
+                "in_hitl": True,
+                "hitl_node": hitl_node,
+            },
         )
     else:
         return Command(
             goto="model_call_node",
-            update={"messages": new_tool_messages, "in_hitl": False},
+            update={"messages": new_tool_messages, "in_hitl": False, "hitl_node": ""},
         )
 
 
 def hitl_signal_node(state: SupervisorState):
-    interrupt(
+    update_workflow(state["workflow_id"], "in-review")
+    feedback = interrupt(
         {
-            "task": "Review supervisor plan",
+            "task": state["hitl_node"],
             "last_message": state["messages"][-1].content,
         }
     )
-
-    return Command(goto="model_call_node", update={"in_hitl": False})
+    update_workflow(state["workflow_id"], "in-progress")
+    return Command(
+        goto="model_call_node",
+        update={"in_hitl": False, "feedback": feedback["feedback"]},
+    )
 
 
 # ----------------------- BUILDER ----------------------------

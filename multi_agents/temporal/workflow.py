@@ -38,7 +38,7 @@ class SupervisorWorkflow:
 
             result = await workflow.execute_activity(
                 run_supervisor_activity,
-                {"human_feedback": self._human_feedback, "thread_id": thread_id},
+                {"feedback": self._human_feedback, "thread_id": thread_id},
                 start_to_close_timeout=timedelta(minutes=5),
             )
 

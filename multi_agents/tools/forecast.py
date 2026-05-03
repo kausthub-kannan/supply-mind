@@ -4,6 +4,10 @@ from langchain_core.tools import tool
 import random
 from datetime import datetime, timedelta
 
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
+
 
 class ForecastSchema(BaseModel):
     sku_id: str = Field(

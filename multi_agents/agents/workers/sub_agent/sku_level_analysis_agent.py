@@ -10,6 +10,10 @@ from multi_agents.agents.workers.sub_agent.supplier_analysis_agent import (
 from multi_agents.utils.db import get_suppliers_for_sku
 import json
 
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
+
 DEFAULT_FORECAST_DAYS = 30
 
 
@@ -97,9 +101,11 @@ async def sku_supplier_node(state: SKUState):
             "urls": [],
         }
     )
+    logger.info(f"ANALYSIS DATA: {result.get("output_data").analysis}")
     return {
         "supplier_analysis_result": {
             "sku_id": state["sku_id"],
+            "sku_name": state["sku_name"],
             "analysis": result["output_data"].analysis,
             "urls": result["output_data"].urls,
         }

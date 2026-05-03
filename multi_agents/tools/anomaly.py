@@ -3,6 +3,9 @@ import random
 from datetime import datetime, timedelta
 from langchain_core.tools import tool
 from multi_agents.tools.schemas.anomaly import AnomalySchema
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 @tool(args_schema=AnomalySchema)

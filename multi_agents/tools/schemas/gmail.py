@@ -5,7 +5,9 @@ from typing import Optional
 class ReadEmailInput(BaseModel):
     count: int = Field(default=5, description="Number of recent emails to fetch.")
     unread_only: bool = Field(default=False, description="Only fetch unread emails.")
-    gmail_thread_id: str = Field(description="The specific Message-ID to retrieve. Pass this to read a full message or follow a specific conversation thread.")
+    gmail_thread_id: str = Field(
+        description="The specific Message-ID to retrieve. Pass this to read a full message or follow a specific conversation thread."
+    )
 
 
 class SendEmailInput(BaseModel):

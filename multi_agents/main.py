@@ -3,6 +3,9 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 from multi_agents.temporal.workflow import SupervisorWorkflow
 from multi_agents.temporal.activities.run_supervisor import run_supervisor_activity
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
 
 TASK_QUEUE = "supervisor-task-queue"
 
@@ -25,7 +28,7 @@ async def run_worker_until_hitl(client: Client):
             ]
             pending = [w for w in workflows if not w.is_done()]
             if not pending:
-                print("No active workflows — worker shutting down.")
+                logger.info("No active workflows — worker shutting down.")
                 break
 
 
@@ -46,14 +49,14 @@ async def start_agent(message: str, thread_id: str):
             id=thread_id,
             task_queue=TASK_QUEUE,
         )
-        print(f"Workflow started: {handle.id}")
+        logger.info(f"Workflow started: {handle.id}")
 
         outcome = await handle.execute_update(
             SupervisorWorkflow.wait_until_hitl_or_done
         )
-        print(f"Outcome: {outcome} — shutting down worker.")
+        logger.info(f"Outcome: {outcome} — shutting down worker.")
 
-    print("start_agent done — container can die now.")
+    logger.info("start_agent done — container can die now.")
 
 
 async def resume_agent(thread_id: str, feedback: str):
@@ -69,7 +72,7 @@ async def resume_agent(thread_id: str, feedback: str):
     async with worker:
         handle = client.get_workflow_handle(thread_id)
         await handle.signal(SupervisorWorkflow.submit_feedback, feedback)
-        print(f"Signal sent to: {thread_id}")
+        logger.info(f"Signal sent to: {thread_id}")
 
         while True:
             await asyncio.sleep(2)
@@ -80,23 +83,24 @@ async def resume_agent(thread_id: str, feedback: str):
                 )
             ]
             if not workflows:
-                print("Workflow done — shutting down worker.")
+                logger.info("Workflow done — shutting down worker.")
                 break
 
-    print("resume_agent done — container can die now.")
+    logger.info("resume_agent done — container can die now.")
 
-
-thread_id = "test-id-12345"
-
-# if __name__ == "__main__":
-#     asyncio.run(
-#         resume_agent(
-#             thread_id,
-#             "HITL Confirmation Status: Order Approved | Proceed sending the email",
-#         )
-#     )
 
 if __name__ == "__main__":
+    import uuid
+
+    thread_id = str(uuid.uuid4())
+
     asyncio.run(
-        start_agent("Start the inventory optimization task for today", thread_id)
+        resume_agent(
+            "08fd3b0d-1ff9-45b1-b96b-89d420150d9f",
+            "HITL Confirmation Status: Reorder Status is Approved (True) | Proceed sending the email even if the previous agent said false",
+        )
     )
+
+    # asyncio.run(
+    #     start_agent("Start the inventory optimization task for today", thread_id)
+    # )

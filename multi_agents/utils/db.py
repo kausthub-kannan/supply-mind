@@ -1,7 +1,12 @@
-from sqlalchemy import Table, MetaData, select, create_engine, join
+from sqlalchemy import Table, MetaData, select, create_engine, join, update
 import os
 import urllib.parse
+from sqlalchemy import insert
+from datetime import datetime, timezone
 
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
 user = os.getenv("POSTGRES_USER")
 password = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD"))
 db_name = os.getenv("POSTGRES_DB")
@@ -51,9 +56,42 @@ def get_suppliers_for_sku(sku_id: str):
             return supplier_details
 
     except Exception as e:
-        print(f"Error fetching detailed suppliers for SKU {sku_id}: {e}")
+        logger.info(f"Error fetching detailed suppliers for SKU {sku_id}: {e}")
         return []
 
 
-if __name__ == "__main__":
-    print(get_suppliers_for_sku("gpu-nv-rtx5090"))
+def add_workflow(workflow_id, notification_message, input_data):
+    engine = create_engine(db_url)
+    metadata = MetaData()
+    workflows_table = Table("workflows", metadata, autoload_with=engine)
+    workflow_type = notification_message
+    created_at = datetime.now(timezone.utc)
+    workflow_status = "in-progress"
+    with engine.connect() as connection:
+        stmt = insert(workflows_table).values(
+            workflow_id=workflow_id,
+            workflow_type=workflow_type,
+            input_data=input_data,
+            created_at=created_at,
+            workflow_status=workflow_status,
+        )
+
+        connection.execute(stmt)
+        connection.commit()
+
+
+def update_workflow(workflow_id, status):
+    engine = create_engine(db_url)
+    metadata = MetaData()
+    workflows_table = Table("workflows", metadata, autoload_with=engine)
+
+    with engine.connect() as connection:
+        stmt = (
+            update(workflows_table)
+            .where(workflows_table.c.workflow_id == workflow_id)
+            .values(workflow_status=status)
+        )
+
+        result = connection.execute(stmt)
+        connection.commit()
+        return result.rowcount

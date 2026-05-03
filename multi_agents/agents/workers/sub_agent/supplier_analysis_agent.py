@@ -12,10 +12,9 @@ from pydantic import BaseModel, Field, field_validator
 from multi_agents.utils.llm_inference import get_model
 from multi_agents.agents.toolkits import supplier_analysis_agent_toolkit, tool_maps
 from multi_agents.utils.helper import summarizer
-import logging
+from multi_agents.utils.logger import setup_logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = setup_logger()
 
 # ---------------------- MODELS ---------------------------
 model = get_model("mistral-large", tools=supplier_analysis_agent_toolkit)
@@ -86,7 +85,7 @@ def model_call_node(state: SearchState) -> Command:
             update={
                 "messages": [response],
                 "output_data": SupplierAnalysisOutput(
-                    analysis=state["messages"][-1].content, urls=state["urls"]
+                    analysis=response.content, urls=state["urls"]
                 ),
             },
         )
@@ -106,15 +105,20 @@ def tool_call_node(state: SearchState):
         logger.info(f"Executing tool: {tool_name} with ID: {tool_id}")
 
         tool = tool_maps.get(tool_name)
-        if not tool:
-            final_content = f"Error: Tool {tool_name} not found."
+        tool_result = tool.invoke(tool_args)
+        if not tool_result:
+            final_content = ["No results returned for this search."]
         else:
-            tool_result = tool.invoke(tool_args)
             current_urls = [
                 item.get("url", "") for item in tool_result if "url" in item
             ]
             all_extracted_urls.extend(current_urls)
-            final_content = [item.get("content", "") for item in tool_result]
+            final_content = [
+                item.get("content", "") for item in tool_result if item.get("content")
+            ]
+
+        if not final_content:
+            final_content = ["Search returned no usable content."]
 
         new_tool_messages.append(
             ToolMessage(
@@ -147,10 +151,10 @@ if __name__ == "__main__":
     result_messages = supplier_analysis_agent.invoke(
         {
             "input_data": SupplierAnalysisInput(
-                sku_name="NVIDIA RTX 5090 32GB (ASUS/MSI)",
+                sku_name="MSI MEG X870E GODLIKE (AMD)",
                 order_quantity=100,
                 delivery_date="22-04-2026",
-                suppliers_list=["Central Computers (CA)", "Newegg Commerce (CA)"],
+                suppliers_list=["D&H Distributing", "ASI Corp"],
             ),
             "urls": [],
         }

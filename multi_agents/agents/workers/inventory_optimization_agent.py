@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated
+from typing import Annotated, List
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.types import Command, Send
 from multi_agents.agents.workers.sub_agent.reorder_assessment_agent import (
@@ -12,11 +12,12 @@ from multi_agents.agents.workers.sub_agent.sku_level_analysis_agent import (
     sku_subgraph,
     SKUState,
 )
+from datetime import datetime
+import json
+from langchain_core.tools import tool
+
 from multi_agents.utils.db import get_inventory
 from multi_agents.utils.file import upload_file
-import json
-from datetime import datetime
-from langchain_core.tools import tool
 from multi_agents.utils.logger import setup_logger
 
 logger = setup_logger()
@@ -31,6 +32,7 @@ class InventoryOptimisationState(MessagesState):
     forecast_data: Annotated[list, operator.add]
     anomaly_detected_data: Annotated[list, operator.add]
     supplier_analysis_data: Annotated[list, operator.add]
+    per_sku_reports: List[dict]
     decision_report: str
     sku_order_data: str
     in_hitl: bool
@@ -103,13 +105,20 @@ def report_generation_node(state: InventoryOptimisationState) -> Command:
 
     return Command(
         goto="reorder_assessment_node",
-        update={"report": result_messages["report"]},
+        update={
+            "report": result_messages["report"],
+            "per_sku_reports": per_sku_reports,
+        },
     )
 
 
 def reorder_assessment_node(state: InventoryOptimisationState) -> Command:
     result = reorder_assessment_agent.invoke(
-        {"report": state["report"], "messages": []}
+        {
+            "report": state["report"],
+            "per_sku_reports": state["per_sku_reports"],
+            "messages": [],
+        }
     )
 
     decision_report = (
@@ -162,48 +171,30 @@ async def run_inventory_optimization_agent(workflow_id: str):
     :return: result of the agent workflow which includes reorder status, sku level data (suppliers and order quantity for each sku)
     """
     try:
-        # skus_data = get_inventory()[:1]
-        # result = await inventory_optimization_agent.ainvoke(
-        #     {
-        #         "skus_data": skus_data,
-        #         "messages": [],
-        #         "current_date": datetime.now().strftime("%Y-%m-%d"),
-        #         "forecast_data": [],
-        #         "anomaly_detected_data": [],
-        #         "supplier_analysis_data": [],
-        #         "report": "",
-        #         "workflow_id": workflow_id,
-        #     }
-        # )
-        # upload_file(f"{workflow_id}/report.html", result["report"])
-        # upload_file(f"{workflow_id}/decision_report.html", result["report"])
+        skus_data = get_inventory()[:1]
+        result = await inventory_optimization_agent.ainvoke(
+            {
+                "skus_data": skus_data,
+                "messages": [],
+                "current_date": datetime.now().strftime("%Y-%m-%d"),
+                "forecast_data": [],
+                "anomaly_detected_data": [],
+                "supplier_analysis_data": [],
+                "report": "",
+                "workflow_id": workflow_id,
+            }
+        )
+        upload_file(f"{workflow_id}/report.html", result["report"])
+        upload_file(f"{workflow_id}/decision_report.html", result["report"])
         return {
             "result": json.dumps(
                 {
-                    # "sku_order_data": result["sku_order_data"],
-                    "sku_order_data": [
-                        {
-                            "sku_name": "MB-X870-AM5 (MSI MEG X870E GODLIKE)",
-                            "reorder_quantity": 6545,
-                            "supplier_name": "D&H Distributing",
-                            "reorder_status": "True",
-                        }
-                    ]
+                    "sku_order_data": result["sku_order_data"],
                 }
             ),
-            # "in_hitl": result["in_hitl"],
             "in_hitl": True,
         }
 
     except Exception as e:
         logger.error(f"Workflow {workflow_id} failed: {e}")
         raise e
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    result = asyncio.run(
-        run_inventory_optimization_agent.ainvoke({"workflow_id": "ex-id-123"})
-    )
-    print(result)

@@ -6,10 +6,10 @@ from langchain.tools import tool
 
 from multi_agents.tools.schemas.search import SearchInput
 
-import logging
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 @tool(

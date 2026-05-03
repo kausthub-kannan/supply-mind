@@ -6,11 +6,10 @@ from langchain_core.tools import tool
 from multi_agents.agents.toolkits import order_and_return_agent_toolkit, tool_maps
 from multi_agents.prompts.order_and_returns import system_prompt, user_prompt
 from multi_agents.utils.llm_inference import get_model
-import logging
+from multi_agents.utils.logger import setup_logger
 import json
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = setup_logger()
 
 
 # ---------------------- STATE ---------------------------
@@ -27,7 +26,6 @@ model = get_model("mistral-large", tools=order_and_return_agent_toolkit)
 
 # ----------------------- NODES ----------------------------
 def input_node(state: EmailAgentState):
-    """Bootstrap: inject the initial HumanMessage if the thread is empty."""
     if state.get("messages"):
         return {}
 
@@ -47,7 +45,6 @@ def input_node(state: EmailAgentState):
 
 
 def model_call_node(state: EmailAgentState) -> Command:
-    """ReAct reasoning step — either calls a tool or decides it's done."""
     messages = [SystemMessage(content=system_prompt)] + state["messages"]
     response = model.invoke(messages)
 
@@ -66,7 +63,6 @@ def model_call_node(state: EmailAgentState) -> Command:
 
 
 def tool_call_node(state: EmailAgentState) -> Command:
-    """Execute every tool call the model requested, return ToolMessages."""
     last_message = state["messages"][-1]
     tool_calls = last_message.tool_calls
     new_tool_messages = []
@@ -88,9 +84,11 @@ def tool_call_node(state: EmailAgentState) -> Command:
                 tool_result if isinstance(tool_result, str) else str(tool_result)
             )
 
-            # --- SECURITY GUARDRAIL FOR EMAILS ---
             if tool_name == "read_email":
-                from multi_agents.guardrails.input.email_guard import email_injection_guardrail
+                from multi_agents.guardrails.input.email_guard import (
+                    email_injection_guardrail,
+                )
+
                 result_content = email_injection_guardrail(result_content)
 
         new_tool_messages.append(
@@ -172,39 +170,3 @@ async def run_orders_and_returns_agent(
     except Exception as e:
         logger.error(f"Workflow {workflow_id} failed: {e}", exc_info=True)
         raise e
-
-
-# ----------------------- ENTRYPOINTS ----------------------------
-if __name__ == "__main__":
-    import json
-
-    # reorder_result = orders_and_returns_agent.invoke(
-    #     {
-    #         "workflow_id": "REORDER-001",
-    #         "instruction_message": "Send a fresh reorder email to Supplier XYZ",
-    #         "agent_data": json.dumps(
-    #             {
-    #                 "supplier_email": "kausthubkannan961@gmail.com",
-    #                 "sku": "NVIDIA-RTX-5090",
-    #                 "quantity": 200,
-    #                 "delivery_date": "2026-05-15",
-    #                 "sku_name": "XYZ",
-    #             }
-    #         ),
-    #     }
-    # )
-
-    reorder_result = orders_and_returns_agent.invoke(
-        {
-            "workflow_id": "REORDER-001",
-            "instruction_message": "Email has been recived from the supplier about one of the orders!",
-            "agent_data": json.dumps(
-                {
-                    "thread_id": "1864010885334385501",
-                }
-            ),
-        }
-    )
-
-    print(f"Workflow ID: {reorder_result['workflow_id']}")
-    print(f"Output: {reorder_result['output_data']}")

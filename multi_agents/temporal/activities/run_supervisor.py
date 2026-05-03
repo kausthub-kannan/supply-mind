@@ -3,17 +3,19 @@ from temporalio import activity
 from multi_agents.agents.supervisor import get_supervisor_agent
 from multi_agents.utils.logger import setup_logger
 
+logger = setup_logger()
+
 
 @activity.defn
 async def run_supervisor_activity(input_data: dict) -> dict:
-    logger = setup_logger(use_agentops=True)
+
     supervisor_agent = await get_supervisor_agent()
 
     config = {"configurable": {"thread_id": input_data["thread_id"]}}
 
-    if input_data.get("human_feedback"):
+    if input_data.get("feedback"):
         result = await supervisor_agent.ainvoke(
-            Command(resume={"feedback": input_data["human_feedback"]}), config
+            Command(resume={"feedback": input_data["feedback"]}), config
         )
     else:
 
@@ -22,6 +24,8 @@ async def run_supervisor_activity(input_data: dict) -> dict:
                 "notification_message": input_data["message"],
                 "in_hitl": input_data["in_hitl"],
                 "workflow_id": input_data["thread_id"],
+                "hitl_node": "",
+                "feedback": "",
             },
             config,
         )

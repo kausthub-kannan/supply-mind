@@ -84,5 +84,8 @@ Please perform a granular reorder assessment for the following findings:
 ### NEGATIVE POINTS (Includes SKU Details):
 {negative_points}
 
-**Instructions:** Identify all unique SKUs mentioned above. For each SKU, determine the reorder status ("True" or "False") and provide the overall synthesis in the reasoning field.
+### SKU Level Data
+{sku_level_data}
+
+**Instructions:** Identify all unique SKUs mentioned above. For each SKU, preserve all existing details exactly as provided and add only the reorder status ("True" or "False") field. Provide the overall synthesis in the reasoning field.
 """
