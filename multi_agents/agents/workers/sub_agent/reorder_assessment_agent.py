@@ -116,9 +116,9 @@ def final_assessment_node(state: AssessmentState) -> Command:
         SystemMessage(content=reorder_assessment_system_prompt),
         HumanMessage(
             content=reorder_assessment_user_prompt.format(
-            negative_points=state.get("negative_points"),
-            positive_points=state.get("positive_points"),
-            sku_level_data=json.dumps(state.get("per_sku_reports"))
+                negative_points=state.get("negative_points"),
+                positive_points=state.get("positive_points"),
+                sku_level_data=json.dumps(state.get("per_sku_reports")),
             )
         ),
     ]

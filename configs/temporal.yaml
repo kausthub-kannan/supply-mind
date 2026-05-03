@@ -1,4 +1,4 @@
-# configs/temporal-dynamic-config.yaml
+# configs/temporal.yaml
 limit.maxIDLength:
   - value: 255
     constraints: {}

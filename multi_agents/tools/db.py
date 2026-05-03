@@ -48,6 +48,3 @@ def safe_execute_query(query: str) -> str:
         return json.dumps({"query_results": query_results})
     except Exception as e:
         return f"Error executing query: {str(e)}"
-
-
-sql_tools = [safe_execute_query, get_schema_tool, list_tables_tool]
