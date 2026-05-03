@@ -6,6 +6,9 @@ import xgboost as xgb
 from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from datetime import datetime, timedelta
+from multi_agents.utils.logger import setup_logger
+logger = setup_logger()
+
 from multi_agents.tools.db import db
 from sqlalchemy import text
 

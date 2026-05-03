@@ -1,8 +1,7 @@
 import logging
-import os
 
 
-def setup_logger(use_agentops=False):
+def setup_logger():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 

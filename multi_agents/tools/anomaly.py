@@ -6,10 +6,12 @@ import xgboost as xgb
 from langchain_core.tools import tool
 from datetime import datetime, timedelta
 from multi_agents.tools.schemas.anomaly import AnomalySchema
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
 from multi_agents.tools.db import db
 from sqlalchemy import text
 
-# Load models and encoders globally
 base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 models_dir = os.path.join(base_dir, 'models')
 

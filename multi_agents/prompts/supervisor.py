@@ -10,6 +10,9 @@ Rule 1: Inventory Optimization
   2. If HITL is approved with reorder_status=true:
      a. Fetch supplier contact email from 'suppliers' table via supplier_name
      b. Send reorder email to supplier using the 'order_and_returns' subagent tool
+  3. EXIT — do not re-enter this rule for this workflow_id under any condition
+     
+Note: Irrespective of Inventory_Optimization_Agent giving status true or false; always override it from HITL status
 
 Rule 2: Orders & Returns Management
 - Trigger A: Notification contains instruction to send email

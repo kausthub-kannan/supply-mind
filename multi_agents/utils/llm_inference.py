@@ -1,6 +1,10 @@
 import os
 from langchain_openai import ChatOpenAI
 
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
+
 
 def get_model(model_name, tools=None, temperature=0):
     return ChatOpenAI(

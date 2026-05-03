@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS workflows (
     workflow_type      TEXT             NOT NULL,
     input_data         TEXT             NOT NULL,
     created_at         TIMESTAMP        NOT NULL,
+    hitl_node          TEXT             NOT NULL DEFAULT '',
     workflow_status    TEXT             NOT NULL CHECK (workflow_status IN (
                                             'completed',
                                             'in-progress',

@@ -68,7 +68,7 @@ services:
       - POSTGRES_SEEDS=postgres
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     volumes:
-      - ./configs/temporal-dynamic-config.yaml:/etc/temporal/config/dynamicconfig/development-sql.yaml:ro
+      - ./configs/temporal.yaml:/etc/temporal/config/dynamicconfig/development-sql.yaml:ro
 
   temporal-ui:
     image: temporalio/ui:2.26.2

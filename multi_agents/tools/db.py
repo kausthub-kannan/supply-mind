@@ -10,6 +10,10 @@ from langchain_core.tools import tool
 import re
 import json
 
+from multi_agents.utils.logger import setup_logger
+
+logger = setup_logger()
+
 user = os.getenv("POSTGRES_USER")
 password = urllib.parse.quote_plus(os.getenv("POSTGRES_PASSWORD"))
 db_name = os.getenv("POSTGRES_DB")
@@ -44,13 +48,3 @@ def safe_execute_query(query: str) -> str:
         return json.dumps({"query_results": query_results})
     except Exception as e:
         return f"Error executing query: {str(e)}"
-
-
-sql_tools = [safe_execute_query, get_schema_tool, list_tables_tool]
-
-if __name__ == "__main__":
-    print(
-        safe_execute_query.invoke(
-            "SELECT contact_email FROM suppliers WHERE supplier_name = 'D&H Distributing'"
-        )
-    )
