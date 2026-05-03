@@ -171,7 +171,7 @@ async def run_inventory_optimization_agent(workflow_id: str):
     :return: result of the agent workflow which includes reorder status, sku level data (suppliers and order quantity for each sku)
     """
     try:
-        skus_data = get_inventory()[:1]
+        skus_data = get_inventory()
         result = await inventory_optimization_agent.ainvoke(
             {
                 "skus_data": skus_data,

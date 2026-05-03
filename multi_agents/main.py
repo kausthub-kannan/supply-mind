@@ -94,13 +94,13 @@ if __name__ == "__main__":
 
     thread_id = str(uuid.uuid4())
 
-    asyncio.run(
-        resume_agent(
-            "08fd3b0d-1ff9-45b1-b96b-89d420150d9f",
-            "HITL Confirmation Status: Reorder Status is Approved (True) | Proceed sending the email even if the previous agent said false",
-        )
-    )
-
     # asyncio.run(
-    #     start_agent("Start the inventory optimization task for today", thread_id)
+    #     resume_agent(
+    #         "08fd3b0d-1ff9-45b1-b96b-89d420150d9f",
+    #         "HITL Confirmation Status: Reorder Status is Approved (True) | Proceed sending the email even if the previous agent said false",
+    #     )
     # )
+
+    asyncio.run(
+        start_agent("Start the inventory optimization task for today", thread_id)
+    )
