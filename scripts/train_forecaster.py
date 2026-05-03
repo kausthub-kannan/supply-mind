@@ -1,4 +1,5 @@
 import os
+import joblib
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -22,7 +23,7 @@ def main():
     
     # We drop 'log_id', 'date', 'units_sold' (target), and the anomaly labels 
     # (since in the future, we won't know if it's an anomaly yet when forecasting)
-    drop_cols = ['log_id', 'date', 'units_sold', 'anomaly_class', 'anomaly_label']
+    drop_cols = ['log_id', 'date', 'units_sold', 'anomaly_class', 'anomaly_label', 'period_days']
     features = [col for col in df.columns if col not in drop_cols]
 
     X = df[features].copy()
@@ -86,6 +87,10 @@ def main():
     model_path = os.path.join(models_dir, 'forecaster_model.json')
     model.save_model(model_path)
     print(f"\nModel successfully saved to {model_path}")
+    
+    encoders_path = os.path.join(models_dir, 'forecaster_encoders.pkl')
+    joblib.dump(encoders, encoders_path)
+    print(f"Encoders successfully saved to {encoders_path}")
 
 if __name__ == "__main__":
     main()

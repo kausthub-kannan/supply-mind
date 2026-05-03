@@ -1,4 +1,5 @@
 import os
+import joblib
 import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
@@ -14,7 +15,7 @@ def main():
     
     # We drop columns we shouldn't train on
     # 'anomaly_class' is dropped because it's just the integer version of our target
-    drop_cols = ['log_id', 'date', 'anomaly_class', 'anomaly_label']
+    drop_cols = ['log_id', 'date', 'anomaly_class', 'anomaly_label', 'period_days']
     features = [col for col in df.columns if col not in drop_cols]
 
     X = df[features].copy()
@@ -22,11 +23,13 @@ def main():
 
     # Encode categorical text into numbers for XGBoost
     categorical_cols = ['sku_id', 'region', 'season', 'category', 'specs_level', 'supplier_id']
+    encoders = {}
     
     for col in categorical_cols:
         if col in X.columns:
             le = LabelEncoder()
             X[col] = le.fit_transform(X[col].astype(str))
+            encoders[col] = le
 
     # For classification, a random split is standard to ensure all classes are represented
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -71,6 +74,10 @@ def main():
     model_path = os.path.join(models_dir, 'anomaly_detector.json')
     model.save_model(model_path)
     print(f"\nModel successfully saved to {model_path}")
+    
+    encoders_path = os.path.join(models_dir, 'anomaly_encoders.pkl')
+    joblib.dump({'features': encoders, 'target': le_y}, encoders_path)
+    print(f"Encoders successfully saved to {encoders_path}")
 
 if __name__ == "__main__":
     main()

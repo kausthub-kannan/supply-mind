@@ -10,7 +10,7 @@ This document summarizes the development of the predictive models for the `suppl
 
 **Features Used**:
 - `sku_id`, `region`, `season`, `category`, `specs_level`, `supplier_id` (Categorical, Label Encoded)
-- `opening_stock`, `units_received`, `units_returned`, `closing_stock`, `price`, `period_days` (Numerical)
+- `opening_stock`, `units_received`, `units_returned`, `closing_stock`, `price` (Numerical)
 
 **Training Strategy**:
 - Data sorted chronologically.
@@ -18,8 +18,8 @@ This document summarizes the development of the predictive models for the `suppl
 - Objective: `reg:squarederror`.
 
 **Performance**:
-- **Mean Absolute Error (MAE)**: ~24.90 units
-- **Root Mean Squared Error (RMSE)**: ~32.40 units
+- **Mean Absolute Error (MAE)**: ~23.97 units
+- **Root Mean Squared Error (RMSE)**: ~31.00 units
 - *Note*: Attempts to add time-series lag features (like rolling averages) resulted in overfitting due to the small dataset size (323 rows). The simpler base model performed better.
 
 ---
@@ -37,8 +37,8 @@ This document summarizes the development of the predictive models for the `suppl
 
 **Performance**:
 - **Overall Accuracy**: 92.31%
-- **Precision (Anomalies)**: 100% (Zero false alarms; when the model flags a crisis, it is always right).
-- **Recall (Anomalies)**: ~65% (The model is conservative and occasionally misses an anomaly, classifying it as 'normal').
+- **Precision (Anomalies)**: Variable (100% for `demand_spike` and `high_returns`, ~67% for `supply_disruption`).
+- **Recall (Anomalies)**: Variable (~75% for `demand_spike`, 100% for `high_returns`).
 
 ---
 
